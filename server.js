@@ -111,16 +111,17 @@ async function waitForUrlContains(page, fragment, timeoutMs = 30000) {
 async function navigateWithWatchdog(page, url, label, timeoutMs = 30000) {
     console.log(`NAV: navigating to ${label} -> ${url}`);
     sendEvent({ type: 'log', level: 'info', message: `🌐 Navigating to ${label}…` });
-    const watchdog = new Promise((_, rej) => setTimeout(() => rej(new Error(`Timeout after ${timeoutMs}ms navigating to ${label}`)), timeoutMs));
-    await Promise.race([
-        (async () => {
-            await page.goto(url, { timeout: 60000, waitUntil: 'networkidle' });
-            await page.waitForLoadState('networkidle').catch(() => {});
-        })(),
-        watchdog
-    ]);
-    console.log(`NAV: reached ${label}`);
-    sendEvent({ type: 'log', level: 'success', message: `✅ Reached ${label}` });
+    try {
+        // Use 'domcontentloaded' instead of 'networkidle' to avoid hanging on slow resources
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
+        await sleep(2000); // Give it 2s to settle
+        console.log(`NAV: reached ${label}`);
+        sendEvent({ type: 'log', level: 'success', message: `✅ Reached ${label}` });
+    } catch (e) {
+        console.log(`NAV: error navigating to ${label}: ${e.message}`);
+        sendEvent({ type: 'log', level: 'error', message: `❌ Navigation error: ${e.message}` });
+        throw new Error(`Timeout after ${timeoutMs}ms navigating to ${label}`);
+    }
 }
 
 async function probeUrl(url, label, timeoutMs = 8000) {
