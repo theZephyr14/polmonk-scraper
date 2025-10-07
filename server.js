@@ -156,6 +156,18 @@ async function debugLoginDom(page) {
     } catch (_) {}
 }
 
+async function waitCloudflareIfPresent(page, timeoutMs = 30000) {
+    try {
+        const start = Date.now();
+        // If a Cloudflare challenge frame appears, wait for it to disappear
+        while (Date.now() - start < timeoutMs) {
+            const hasCf = page.frames().some(f => /challenges\.cloudflare\.com/i.test(f.url?.() || ''));
+            if (!hasCf) break;
+            await sleep(1000);
+        }
+    } catch (_) {}
+}
+
 // Try to find elements either on the main page or within any iframe
 async function queryInPageOrFrames(page, selectors) {
     // Main page first
@@ -641,15 +653,19 @@ app.post('/api/process-properties', async (req, res) => {
         
         // Create context with watchdogs and logs
         sendEvent({ type: 'log', level: 'info', message: '⚙️ Creating browser context…' });
-        try {
-            if (!context) {
+            try {
+                if (!context) {
                 // Prefer existing context when connected over CDP (remote Browserless usually runs persistent context)
                 const existingContexts = typeof browser?.contexts === 'function' ? browser.contexts() : [];
                 if (existingContexts && existingContexts.length > 0) {
                     context = existingContexts[0];
                 } else {
-                    context = await Promise.race([
-                        browser.newContext(),
+                        context = await Promise.race([
+                            browser.newContext({
+                                userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+                                locale: 'en-US',
+                                timezoneId: 'Europe/Madrid',
+                            }),
                         new Promise((_, rej) => setTimeout(() => rej(new Error('newContext timeout (10s)')), 10000))
                     ]);
                 }
@@ -691,6 +707,13 @@ app.post('/api/process-properties', async (req, res) => {
             }
         }
         sendEvent({ type: 'log', level: 'success', message: '✅ Page opened' });
+        try {
+            await page.addInitScript(() => {
+                // Reduce headless detection
+                Object.defineProperty(navigator, 'webdriver', { get: () => false });
+            });
+            await context.setExtraHTTPHeaders?.({ 'Accept-Language': 'en-US,en;q=0.9' });
+        } catch (_) {}
 
         // Set sane timeouts to avoid silent hangs
         try {
@@ -743,6 +766,8 @@ app.post('/api/process-properties', async (req, res) => {
                 await probeUrl('https://app.polaroo.com', 'polaroo host');
                 // watchdog navigation to login
                 await navigateWithWatchdog(page, 'https://app.polaroo.com/login', 'login page');
+                // Wait for Cloudflare Turnstile to finish if present
+                await waitCloudflareIfPresent(page, 30000);
                 await debugLoginDom(page);
                 // Some tenants render SSO first; try to reveal classic email login if present
                 await maybeRevealEmailLogin(page).catch(()=>{});
