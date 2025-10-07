@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Data Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Upload Section -->
+        <div id="uploadSection" class="upload-card">
+            <h1>Excel Data Manager</h1>
+            <p>Upload your Excel file to get started</p>
+            
+            <form id="uploadForm" class="upload-form">
+                <div class="form-group">
+                    <label for="excelFile">Excel File:</label>
+                    <input type="file" id="excelFile" name="excelFile" accept=".xlsx,.xls" required>
+                </div>
+                
+                <button type="submit" class="submit-btn">Upload & Continue</button>
+            </form>
+            
+            <div id="message" class="message"></div>
+        </div>
+
+        <!-- Main Interface (Hidden Initially) -->
+        <div id="mainInterface" class="main-interface" style="display: none;">
+            <div class="header">
+                <h1>Excel Data Manager</h1>
+                <button id="backToUpload" class="back-btn">Upload New File</button>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="secrets">Secrets</button>
+                <button class="tab-btn" data-tab="properties">Properties</button>
+            </div>
+            
+            <div class="tab-content">
+                <!-- Secrets Tab -->
+                <div id="secretsTab" class="tab-panel active">
+                    <h2>Secrets Configuration</h2>
+                    <form id="secretsForm" class="secrets-form">
+                        <div class="form-group">
+                            <label for="email">Polaroo Email:</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password">Polaroo Password:</label>
+                            <input type="password" id="password" name="password" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cohereKey">Cohere API Key (Optional):</label>
+                            <input type="password" id="cohereKey" name="cohereKey" placeholder="Leave empty to use fallback logic">
+                            <small style="color: #666; font-size: 12px;">For intelligent bill analysis. Get your free key at cohere.ai</small>
+                        </div>
+                        
+                        <button type="submit" class="submit-btn">Save Secrets</button>
+                    </form>
+                </div>
+                
+                <!-- Properties Tab -->
+                <div id="propertiesTab" class="tab-panel">
+                    <div class="properties-header">
+                        <h2>Properties from Excel</h2>
+                        <div style="display:flex; gap:12px; align-items:center;">
+                            <label for="monthPair" style="font-size:14px;color:#555;">Period:</label>
+                            <select id="monthPair" style="padding:8px 10px;border:1px solid #ddd;border-radius:6px;">
+                                <option value="Jan-Feb">Jan-Feb</option>
+                                <option value="Mar-Apr">Mar-Apr</option>
+                                <option value="May-Jun">May-Jun</option>
+                                <option value="Jul-Aug" selected>Jul-Aug</option>
+                                <option value="Sep-Oct">Sep-Oct</option>
+                                <option value="Nov-Dec">Nov-Dec</option>
+                            </select>
+                            <label for="limit10" style="display:flex;align-items:center;gap:6px;font-size:14px;color:#555;">
+                                <input type="checkbox" id="limit10" /> First 10 only
+                            </label>
+                            <button id="processBtn" class="process-btn" disabled>Process</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Processing Modal -->
+                    <div id="processingModal" class="processing-modal" style="display: none;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3>Processing Properties</h3>
+                                <button id="closeModal" class="close-btn">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div id="progressFill" class="progress-fill"></div>
+                                    </div>
+                                    <span id="progressText">0%</span>
+                                </div>
+                                <div id="logContainer" class="log-container">
+                                    <div class="log-header">Live Log:</div>
+                                    <div id="logContent" class="log-content"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="propertiesList" class="properties-list">
+                        <!-- Properties will be loaded here -->
+                    </div>
+                    
+                    <div id="resultsContainer" class="results-container" style="display: none;">
+                        <h3>Processing Results</h3>
+                        <div id="resultsList" class="results-list">
+                            <!-- Results will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
