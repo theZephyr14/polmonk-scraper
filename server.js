@@ -142,6 +142,51 @@ async function probeUrl(url, label, timeoutMs = 8000) {
     }
 }
 
+// Try to find elements either on the main page or within any iframe
+async function queryInPageOrFrames(page, selectors) {
+    // Main page first
+    for (const sel of selectors) {
+        const loc = page.locator(sel).first();
+        try {
+            if (await loc.count()) return { frame: page, locator: loc };
+        } catch (_) {}
+    }
+    // Then child frames
+    for (const frame of page.frames()) {
+        for (const sel of selectors) {
+            try {
+                const loc = frame.locator(sel).first();
+                if (await loc.count()) return { frame, locator: loc };
+            } catch (_) {}
+        }
+    }
+    return null;
+}
+
+async function fillLoginCredentials(page, email, password) {
+    const emailSelectors = [
+        'input[name="email"]',
+        'input[id*="email" i]',
+        'input[type="email"]',
+        'input[placeholder*="email" i]'
+    ];
+    const passSelectors = [
+        'input[name="password"]',
+        'input[id*="pass" i]',
+        'input[type="password"]',
+        'input[placeholder*="password" i]'
+    ];
+
+    const emailTarget = await queryInPageOrFrames(page, emailSelectors);
+    const passTarget = await queryInPageOrFrames(page, passSelectors);
+
+    if (!emailTarget || !passTarget) return false;
+
+    try { await emailTarget.locator.fill(email, { timeout: 2000 }); } catch (_) {}
+    try { await passTarget.locator.fill(password, { timeout: 2000 }); } catch (_) {}
+    return true;
+}
+
 // Cohere API integration
 async function analyzeWithCohere(tableData, propertyName) {
     try {
@@ -621,30 +666,31 @@ app.post('/api/process-properties', async (req, res) => {
                 if (!page.url().includes('dashboard')) {
                     logs.push({ message: '📝 Filling login credentials...', level: 'info' });
 
-                    const emailSelectors = ['input[name="email"]','input[type="email"]','input[placeholder*="email" i]'];
-                    const passSelectors = ['input[name="password"]','input[type="password"]','input[placeholder*="password" i]'];
-
-                    let emailFilled = false; let passFilled = false;
-                    for (const sel of emailSelectors) {
-                        const loc = page.locator(sel).first();
-                        if (await loc.count()) { await loc.fill(email).catch(() => {}); emailFilled = true; break; }
-                    }
-                    for (const sel of passSelectors) {
-                        const loc = page.locator(sel).first();
-                        if (await loc.count()) { await loc.fill(password).catch(() => {}); passFilled = true; break; }
-                    }
-                    if (!emailFilled || !passFilled) throw new Error('Login inputs not found');
+                    const filled = await fillLoginCredentials(page, email, password);
+                    if (!filled) throw new Error('Login inputs not found');
 
                     await sleep(WAIT_MS); // give UI a moment before clicking
                     logs.push({ message: '🖱️ Submitting login form...', level: 'info' });
                     sendEvent({ type: 'log', level: 'info', message: '🖱️ Submitting login form...' });
-                    const submitSelectors = ['button[type="submit"]','button:has-text("Sign in")','button:has-text("Log in")','button:has-text("Acceder")','button:has-text("Iniciar sesión")'];
+                    const submitSelectors = [
+                        'button[type="submit"]',
+                        'button:has-text("Sign in")',
+                        'button:has-text("Log in")',
+                        'button:has-text("Acceder")',
+                        'button:has-text("Iniciar sesión")',
+                        'form button'
+                    ];
                     let clicked = false;
-                    for (const sel of submitSelectors) {
-                        const btn = page.locator(sel).first();
-                        if (await btn.count()) { await btn.click().catch(() => {}); clicked = true; break; }
+                    // Try main page and frames for the submit button
+                    const clickTargets = [];
+                    for (const sel of submitSelectors) clickTargets.push({ frame: page, locator: page.locator(sel).first() });
+                    for (const frame of page.frames()) {
+                        for (const sel of submitSelectors) clickTargets.push({ frame, locator: frame.locator(sel).first() });
                     }
-                    if (!clicked) await page.keyboard.press('Enter');
+                    for (const target of clickTargets) {
+                        try { if (await target.locator.count()) { await target.locator.click({ timeout: 2000 }).catch(()=>{}); clicked = true; break; } } catch(_) {}
+                    }
+                    if (!clicked) await page.keyboard.press('Enter').catch(()=>{});
                 }
 
                 // Wait loop for dashboard
