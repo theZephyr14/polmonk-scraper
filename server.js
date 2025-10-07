@@ -164,27 +164,56 @@ async function queryInPageOrFrames(page, selectors) {
 }
 
 async function fillLoginCredentials(page, email, password) {
-    const emailSelectors = [
-        'input[name="email"]',
-        'input[id*="email" i]',
-        'input[type="email"]',
-        'input[placeholder*="email" i]'
-    ];
-    const passSelectors = [
-        'input[name="password"]',
-        'input[id*="pass" i]',
-        'input[type="password"]',
-        'input[placeholder*="password" i]'
-    ];
+    // Strict Polaroo selectors only
+    const emailSel = 'input[name="email"]';
+    const passSel = 'input[name="password"]';
 
-    const emailTarget = await queryInPageOrFrames(page, emailSelectors);
-    const passTarget = await queryInPageOrFrames(page, passSelectors);
+    // Try main page
+    let emailLoc = page.locator(emailSel).first();
+    let passLoc = page.locator(passSel).first();
 
-    if (!emailTarget || !passTarget) return false;
+    if (!(await emailLoc.count())) {
+        // Look in frames for the same strict selectors
+        for (const frame of page.frames()) {
+            const candEmail = frame.locator(emailSel).first();
+            if (await candEmail.count()) {
+                emailLoc = candEmail;
+                passLoc = frame.locator(passSel).first();
+                break;
+            }
+        }
+    }
 
-    try { await emailTarget.locator.fill(email, { timeout: 2000 }); } catch (_) {}
-    try { await passTarget.locator.fill(password, { timeout: 2000 }); } catch (_) {}
+    // Wait for fields to exist and be visible
+    try { await emailLoc.waitFor({ state: 'visible', timeout: 10000 }); } catch { return false; }
+    try { await passLoc.waitFor({ state: 'visible', timeout: 10000 }); } catch { return false; }
+
+    await emailLoc.fill(email, { timeout: 5000 }).catch(()=>{});
+    await passLoc.fill(password, { timeout: 5000 }).catch(()=>{});
     return true;
+}
+
+// Some providers hide email/password behind a "Continue with email" toggle
+async function maybeRevealEmailLogin(page) {
+    const revealSelectors = [
+        'button:has-text("Continue with email")',
+        'button:has-text("Sign in with email")',
+        'button:has-text("Use email")',
+        'a:has-text("Continue with email")',
+        'a:has-text("Sign in with email")',
+        'a:has-text("Use email")'
+    ];
+    // Try on main page and frames
+    const targets = [];
+    for (const sel of revealSelectors) targets.push({ frame: page, locator: page.locator(sel).first() });
+    for (const frame of page.frames()) {
+        for (const sel of revealSelectors) targets.push({ frame, locator: frame.locator(sel).first() });
+    }
+    for (const t of targets) {
+        try {
+            if (await t.locator.count()) { await t.locator.click({ timeout: 1500 }).catch(()=>{}); }
+        } catch(_) {}
+    }
 }
 
 // Cohere API integration
@@ -653,6 +682,8 @@ app.post('/api/process-properties', async (req, res) => {
                 await probeUrl('https://app.polaroo.com', 'polaroo host');
                 // watchdog navigation to login
                 await navigateWithWatchdog(page, 'https://app.polaroo.com/login', 'login page');
+                // Some tenants render SSO first; try to reveal classic email login if present
+                await maybeRevealEmailLogin(page).catch(()=>{});
                 await sleep(WAIT_MS);
 
                 // Handle cookie/consent banners if present
@@ -672,24 +703,16 @@ app.post('/api/process-properties', async (req, res) => {
                     await sleep(WAIT_MS); // give UI a moment before clicking
                     logs.push({ message: '🖱️ Submitting login form...', level: 'info' });
                     sendEvent({ type: 'log', level: 'info', message: '🖱️ Submitting login form...' });
-                    const submitSelectors = [
-                        'button[type="submit"]',
-                        'button:has-text("Sign in")',
-                        'button:has-text("Log in")',
-                        'button:has-text("Acceder")',
-                        'button:has-text("Iniciar sesión")',
-                        'form button'
-                    ];
+                    // Strict submit: only type=submit
                     let clicked = false;
-                    // Try main page and frames for the submit button
-                    const clickTargets = [];
-                    for (const sel of submitSelectors) clickTargets.push({ frame: page, locator: page.locator(sel).first() });
-                    for (const frame of page.frames()) {
-                        for (const sel of submitSelectors) clickTargets.push({ frame, locator: frame.locator(sel).first() });
+                    let submit = page.locator('button[type="submit"]').first();
+                    if (!(await submit.count())) {
+                        for (const frame of page.frames()) {
+                            const cand = frame.locator('button[type="submit"]').first();
+                            if (await cand.count()) { submit = cand; break; }
+                        }
                     }
-                    for (const target of clickTargets) {
-                        try { if (await target.locator.count()) { await target.locator.click({ timeout: 2000 }).catch(()=>{}); clicked = true; break; } } catch(_) {}
-                    }
+                    try { await submit.click({ timeout: 5000 }); clicked = true; } catch (_) {}
                     if (!clicked) await page.keyboard.press('Enter').catch(()=>{});
                 }
 
