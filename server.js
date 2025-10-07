@@ -142,6 +142,20 @@ async function probeUrl(url, label, timeoutMs = 8000) {
     }
 }
 
+async function debugLoginDom(page) {
+    try {
+        const infos = [];
+        const frames = [page, ...page.frames()];
+        for (const f of frames) {
+            const url = f.url?.() || 'n/a';
+            const emailCount = await f.locator('input[name="email"]').count().catch(()=>0);
+            const passCount = await f.locator('input[name="password"]').count().catch(()=>0);
+            infos.push({ url, emailCount, passCount });
+        }
+        sendEvent({ type: 'log', level: 'info', message: `🔎 DOM probe: ${JSON.stringify(infos)}` });
+    } catch (_) {}
+}
+
 // Try to find elements either on the main page or within any iframe
 async function queryInPageOrFrames(page, selectors) {
     // Main page first
@@ -729,9 +743,11 @@ app.post('/api/process-properties', async (req, res) => {
                 await probeUrl('https://app.polaroo.com', 'polaroo host');
                 // watchdog navigation to login
                 await navigateWithWatchdog(page, 'https://app.polaroo.com/login', 'login page');
+                await debugLoginDom(page);
                 // Some tenants render SSO first; try to reveal classic email login if present
                 await maybeRevealEmailLogin(page).catch(()=>{});
                 await sleep(WAIT_MS);
+                await debugLoginDom(page);
 
                 // Handle cookie/consent banners if present
                 try {
