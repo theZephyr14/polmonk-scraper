@@ -630,7 +630,13 @@ app.post('/api/process-properties', async (req, res) => {
                 const userDataDir = '/tmp/chrome-profile';
                 context = await chromium.launchPersistentContext(userDataDir, {
                     headless: true,
-                    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+                    args: [
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-blink-features=AutomationControlled',
+                        '--window-size=1366,768'
+                    ]
                 });
                 console.log('🟢 Persistent context launched.');
                 sendEvent({ type: 'log', level: 'info', message: '🟢 Persistent context launched.' });
@@ -696,7 +702,13 @@ app.post('/api/process-properties', async (req, res) => {
                 const userDataDir = '/tmp/chrome-profile';
                 const pctx = await chromium.launchPersistentContext(userDataDir, {
                     headless: true,
-                    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+                    args: [
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-blink-features=AutomationControlled',
+                        '--window-size=1366,768'
+                    ]
                 });
                 context = pctx;
                 const pages = context.pages();
@@ -711,7 +723,12 @@ app.post('/api/process-properties', async (req, res) => {
             await page.addInitScript(() => {
                 // Reduce headless detection
                 Object.defineProperty(navigator, 'webdriver', { get: () => false });
+                Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+                Object.defineProperty(navigator, 'plugins', { get: () => [1,2,3,4,5] });
+                // Pretend Chrome env
+                window.chrome = { runtime: {} };
             });
+            await page.setViewportSize?.({ width: 1366, height: 768 });
             await context.setExtraHTTPHeaders?.({ 'Accept-Language': 'en-US,en;q=0.9' });
         } catch (_) {}
 
@@ -767,7 +784,7 @@ app.post('/api/process-properties', async (req, res) => {
                 // watchdog navigation to login
                 await navigateWithWatchdog(page, 'https://app.polaroo.com/login', 'login page');
                 // Wait for Cloudflare Turnstile to finish if present
-                await waitCloudflareIfPresent(page, 30000);
+                await waitCloudflareIfPresent(page, 60000);
                 await debugLoginDom(page);
                 // Some tenants render SSO first; try to reveal classic email login if present
                 await maybeRevealEmailLogin(page).catch(()=>{});
