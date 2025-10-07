@@ -164,32 +164,47 @@ async function queryInPageOrFrames(page, selectors) {
 }
 
 async function fillLoginCredentials(page, email, password) {
-    // Strict Polaroo selectors only
-    const emailSel = 'input[name="email"]';
-    const passSel = 'input[name="password"]';
+    // Prefer explicit Polaroo fields, with label/placeholder fallbacks (still precise to the form shown)
+    const tryBuildLocators = (root) => ([
+        root.locator('input[name="email"]').first(),
+        root.getByLabel?.(/Email/i),
+        root.getByPlaceholder?.(/Email/i),
+    ].filter(Boolean));
 
-    // Try main page
-    let emailLoc = page.locator(emailSel).first();
-    let passLoc = page.locator(passSel).first();
+    const tryBuildPassLocators = (root) => ([
+        root.locator('input[name="password"]').first(),
+        root.getByLabel?.(/Password/i),
+        root.getByPlaceholder?.(/Password/i),
+    ].filter(Boolean));
 
-    if (!(await emailLoc.count())) {
-        // Look in frames for the same strict selectors
-        for (const frame of page.frames()) {
-            const candEmail = frame.locator(emailSel).first();
-            if (await candEmail.count()) {
-                emailLoc = candEmail;
-                passLoc = frame.locator(passSel).first();
-                break;
+    const roots = [page, ...page.frames()];
+    let emailLoc; let passLoc;
+    for (const root of roots) {
+        for (const loc of tryBuildLocators(root)) {
+            try { if (await loc.count()) { emailLoc = loc; break; } } catch(_) {}
+        }
+        if (emailLoc) {
+            for (const loc of tryBuildPassLocators(root)) {
+                try { if (await loc.count()) { passLoc = loc; break; } } catch(_) {}
             }
         }
+        if (emailLoc && passLoc) break;
     }
 
-    // Wait for fields to exist and be visible
-    try { await emailLoc.waitFor({ state: 'visible', timeout: 10000 }); } catch { return false; }
-    try { await passLoc.waitFor({ state: 'visible', timeout: 10000 }); } catch { return false; }
+    if (!emailLoc || !passLoc) {
+        try {
+            const p = `/tmp/login-missing-${Date.now()}.png`;
+            await page.screenshot({ path: p, fullPage: true }).catch(()=>{});
+            sendEvent({ type: 'log', level: 'warning', message: `📸 Saved screenshot for missing inputs: ${p}` });
+        } catch(_) {}
+        return false;
+    }
 
-    await emailLoc.fill(email, { timeout: 5000 }).catch(()=>{});
-    await passLoc.fill(password, { timeout: 5000 }).catch(()=>{});
+    try { await emailLoc.waitFor({ state: 'visible', timeout: 15000 }); } catch { return false; }
+    try { await passLoc.waitFor({ state: 'visible', timeout: 15000 }); } catch { return false; }
+
+    await emailLoc.fill(email, { timeout: 8000 }).catch(()=>{});
+    await passLoc.fill(password, { timeout: 8000 }).catch(()=>{});
     return true;
 }
 
