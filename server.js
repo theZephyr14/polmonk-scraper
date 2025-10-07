@@ -636,7 +636,8 @@ app.post('/api/process-properties', async (req, res) => {
                         '--disable-dev-shm-usage',
                         '--disable-blink-features=AutomationControlled',
                         '--window-size=1366,768'
-                    ]
+                    ],
+                    proxy: process.env.PROXY_URL ? { server: process.env.PROXY_URL } : undefined
                 });
                 console.log('🟢 Persistent context launched.');
                 sendEvent({ type: 'log', level: 'info', message: '🟢 Persistent context launched.' });
@@ -708,7 +709,8 @@ app.post('/api/process-properties', async (req, res) => {
                         '--disable-dev-shm-usage',
                         '--disable-blink-features=AutomationControlled',
                         '--window-size=1366,768'
-                    ]
+                    ],
+                    proxy: process.env.PROXY_URL ? { server: process.env.PROXY_URL } : undefined
                 });
                 context = pctx;
                 const pages = context.pages();
