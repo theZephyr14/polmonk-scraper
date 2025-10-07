@@ -216,6 +216,38 @@ async function maybeRevealEmailLogin(page) {
     }
 }
 
+// Fill and submit with resilience to frame reloads/detach
+async function safeFillAndSubmit(page, email, password) {
+    for (let i = 1; i <= 2; i++) {
+        try {
+            await maybeRevealEmailLogin(page).catch(()=>{});
+            const filled = await fillLoginCredentials(page, email, password);
+            if (!filled) return false;
+
+            // Strict submit button again per-attempt (fresh locator each time)
+            let submit = page.locator('button[type="submit"]').first();
+            if (!(await submit.count())) {
+                for (const frame of page.frames()) {
+                    const cand = frame.locator('button[type="submit"]').first();
+                    if (await cand.count()) { submit = cand; break; }
+                }
+            }
+            await submit.click({ timeout: 5000 }).catch(async () => {
+                await page.keyboard.press('Enter').catch(()=>{});
+            });
+            return true;
+        } catch (e) {
+            // If the login iframe reloaded, try once more
+            if (String(e?.message || e).toLowerCase().includes('detached')) {
+                await sleep(1500);
+                continue;
+            }
+            throw e;
+        }
+    }
+    return false;
+}
+
 // Cohere API integration
 async function analyzeWithCohere(tableData, propertyName) {
     try {
@@ -697,23 +729,8 @@ app.post('/api/process-properties', async (req, res) => {
                 if (!page.url().includes('dashboard')) {
                     logs.push({ message: '📝 Filling login credentials...', level: 'info' });
 
-                    const filled = await fillLoginCredentials(page, email, password);
-                    if (!filled) throw new Error('Login inputs not found');
-
-                    await sleep(WAIT_MS); // give UI a moment before clicking
-                    logs.push({ message: '🖱️ Submitting login form...', level: 'info' });
-                    sendEvent({ type: 'log', level: 'info', message: '🖱️ Submitting login form...' });
-                    // Strict submit: only type=submit
-                    let clicked = false;
-                    let submit = page.locator('button[type="submit"]').first();
-                    if (!(await submit.count())) {
-                        for (const frame of page.frames()) {
-                            const cand = frame.locator('button[type="submit"]').first();
-                            if (await cand.count()) { submit = cand; break; }
-                        }
-                    }
-                    try { await submit.click({ timeout: 5000 }); clicked = true; } catch (_) {}
-                    if (!clicked) await page.keyboard.press('Enter').catch(()=>{});
+                    const ok = await safeFillAndSubmit(page, email, password);
+                    if (!ok) throw new Error('Login inputs not found');
                 }
 
                 // Wait loop for dashboard
