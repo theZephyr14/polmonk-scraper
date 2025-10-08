@@ -87,31 +87,7 @@ function jitter(min = 200, max = 800) {
 }
 
 // Detect Browserless 429 responses and websocket closure indicating throttling
-function isBrowserless429(err) {
-    const m = String(err?.message || err);
-    return m.includes('429 Too Many Requests') || /code=1006/.test(m);
-}
-
-// Wrapper to create a session with exponential backoff on 429
-async function connectWithBackoff(maxAttempts = 5) {
-    let lastErr;
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        try {
-            // gentle delay even before first try to avoid burst
-            if (attempt === 1) {
-                await sleep(2500 + Math.floor(Math.random() * 1000));
-            }
-            return await createBrowserSession();
-        } catch (e) {
-            lastErr = e;
-            if (!isBrowserless429(e)) throw e;
-            const delayMs = Math.min(16000, 2000 * Math.pow(2, attempt - 1));
-            try { sendEvent({ type: 'log', level: 'warning', message: `⏳ Browserless 429 - backing off ${delayMs}ms (attempt ${attempt}/${maxAttempts})` }); } catch(_) {}
-            await sleep(delayMs);
-        }
-    }
-    throw lastErr;
-}
+// (Backoff removed) We now connect directly per property using createBrowserSession()
 
 async function withRetry(task, attempts = 3, backoffMs = 800, label = 'step') {
     let lastErr;
@@ -609,8 +585,8 @@ app.post('/api/process-properties', async (req, res) => {
             let browser, context, page;
             
             try {
-                // Create new browser session for this property with backoff
-                const session = await connectWithBackoff(5);
+                // Create new browser session for this property (no backoff)
+                const session = await createBrowserSession();
                 browser = session.browser;
                 context = session.context;
                 page = session.page;
