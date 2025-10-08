@@ -578,7 +578,7 @@ app.post('/api/process-properties', async (req, res) => {
             
             // Add delay BEFORE processing each property (except first)
             if (i > 0) {
-                await sleep(15000); // 15s delay before each new connection
+                await sleep(25000 + Math.random() * 10000); // 25-35s random delay
             }
             
             const property = properties[i];
