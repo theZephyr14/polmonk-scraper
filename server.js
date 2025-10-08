@@ -575,6 +575,12 @@ app.post('/api/process-properties', async (req, res) => {
         // Process each property with its own browser session
         for (let i = 0; i < properties.length; i++) {
             if (effectiveLimit && i >= effectiveLimit) break;
+            
+            // Add delay BEFORE processing each property (except first)
+            if (i > 0) {
+                await sleep(15000); // 15s delay before each new connection
+            }
+            
             const property = properties[i];
             const propertyName = property.name || property; // Handle both old and new format
             const roomCount = property.rooms || 0;
@@ -777,10 +783,7 @@ app.post('/api/process-properties', async (req, res) => {
                 await cleanupBrowserSession(browser, context);
             }
             
-            // Small delay between properties (additional throttle)
-            if (i < properties.length - 1) {
-                await sleep(15000); // fixed 15s to avoid Browserless 429 bursts
-            }
+            // Delay moved to BEFORE each property connection (except first)
         }
         
         logs.push({ message: '🎉 Processing completed!', level: 'success' });
