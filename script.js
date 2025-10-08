@@ -389,6 +389,30 @@ document.addEventListener('DOMContentLoaded', function() {
             resultsList.appendChild(resultItem);
         });
         
+        // Add export button for HouseMonk testing (TEMPORARY)
+        const exportBtn = document.createElement('button');
+        exportBtn.className = 'submit-btn';
+        exportBtn.style.marginTop = '20px';
+        exportBtn.textContent = '📥 Export Overuse Data for HouseMonk Test';
+        exportBtn.onclick = async () => {
+            try {
+                const response = await fetch('/api/export-test-data', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ results })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(`✅ Exported ${data.count} properties with overuse to test_overuse_data.json\n\nRun: node test_housemonk_integration.js`);
+                } else {
+                    alert(`❌ Export failed: ${data.message}`);
+                }
+            } catch (error) {
+                alert(`❌ Export failed: ${error.message}`);
+            }
+        };
+        resultsList.appendChild(exportBtn);
+        
         resultsContainer.style.display = 'block';
     }
     

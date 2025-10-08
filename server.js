@@ -396,46 +396,46 @@ async function createBrowserSession() {
         const remoteWs = process.env.BROWSER_WS_URL || process.env.BROWSERLESS_WS_URL;
         const forceLocal = String(process.env.FORCE_LOCAL_CHROMIUM || '').toLowerCase() === 'true';
         
-        if (forceLocal) {
+            if (forceLocal) {
             console.log('⛳ FORCE_LOCAL_CHROMIUM=true → using local Chromium');
-            const userDataDir = '/tmp/chrome-profile';
-            context = await chromium.launchPersistentContext(userDataDir, {
-                headless: true,
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-blink-features=AutomationControlled',
-                    '--window-size=1366,768'
-                ],
-                proxy: process.env.PROXY_URL ? { server: process.env.PROXY_URL } : undefined
-            });
-        } else {
-            if (!remoteWs) {
-                throw new Error('BROWSER_WS_URL (Browserless) is not configured');
-            }
-            console.log('🌐 Connecting to remote browser over WebSocket…');
-            browser = await chromium.connectOverCDP(remoteWs);
+                const userDataDir = '/tmp/chrome-profile';
+                context = await chromium.launchPersistentContext(userDataDir, {
+                    headless: true,
+                    args: [
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-blink-features=AutomationControlled',
+                        '--window-size=1366,768'
+                    ],
+                    proxy: process.env.PROXY_URL ? { server: process.env.PROXY_URL } : undefined
+                });
+            } else {
+                if (!remoteWs) {
+                    throw new Error('BROWSER_WS_URL (Browserless) is not configured');
+                }
+                console.log('🌐 Connecting to remote browser over WebSocket…');
+                browser = await chromium.connectOverCDP(remoteWs);
             context = await browser.newContext({
-                userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-                locale: 'en-US',
-                timezoneId: 'Europe/Madrid',
+                                userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+                                locale: 'en-US',
+                                timezoneId: 'Europe/Madrid',
             });
         }
         
         page = await context.newPage();
         
         // Configure page
-        await page.addInitScript(() => {
-            Object.defineProperty(navigator, 'webdriver', { get: () => false });
-            Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-            Object.defineProperty(navigator, 'plugins', { get: () => [1,2,3,4,5] });
-            window.chrome = { runtime: {} };
-        });
-        await page.setViewportSize?.({ width: 1366, height: 768 });
-        await context.setExtraHTTPHeaders?.({ 'Accept-Language': 'en-US,en;q=0.9' });
-        page.setDefaultTimeout(15000);
-        page.setDefaultNavigationTimeout(30000);
+            await page.addInitScript(() => {
+                Object.defineProperty(navigator, 'webdriver', { get: () => false });
+                Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+                Object.defineProperty(navigator, 'plugins', { get: () => [1,2,3,4,5] });
+                window.chrome = { runtime: {} };
+            });
+            await page.setViewportSize?.({ width: 1366, height: 768 });
+            await context.setExtraHTTPHeaders?.({ 'Accept-Language': 'en-US,en;q=0.9' });
+            page.setDefaultTimeout(15000);
+            page.setDefaultNavigationTimeout(30000);
         
         console.log('✅ Browser session created successfully');
         return { browser, context, page };
@@ -602,120 +602,120 @@ app.post('/api/process-properties', async (req, res) => {
                 page = session.page;
                 
                 // Login to Polaroo
-                await withRetry(async (attempt) => {
-                    logs.push({ message: `🔑 Logging into Polaroo... (attempt ${attempt})`, level: 'info' });
-                    sendEvent({ type: 'log', level: 'info', message: `🔑 Logging into Polaroo... (attempt ${attempt})` });
+            await withRetry(async (attempt) => {
+                logs.push({ message: `🔑 Logging into Polaroo... (attempt ${attempt})`, level: 'info' });
+                sendEvent({ type: 'log', level: 'info', message: `🔑 Logging into Polaroo... (attempt ${attempt})` });
                     
-                    // Quick egress probe
-                    await probeUrl('https://www.google.com', 'egress');
-                    await probeUrl('https://app.polaroo.com', 'polaroo host');
+                // Quick egress probe
+                await probeUrl('https://www.google.com', 'egress');
+                await probeUrl('https://app.polaroo.com', 'polaroo host');
                     
                     // Navigate to login page
-                    await navigateWithWatchdog(page, 'https://app.polaroo.com/login', 'login page');
-                    await waitCloudflareIfPresent(page, 60000);
-                    await debugLoginDom(page);
-                    await maybeRevealEmailLogin(page).catch(()=>{});
-                    await sleep(WAIT_MS);
-                    await debugLoginDom(page);
+                await navigateWithWatchdog(page, 'https://app.polaroo.com/login', 'login page');
+                await waitCloudflareIfPresent(page, 60000);
+                await debugLoginDom(page);
+                await maybeRevealEmailLogin(page).catch(()=>{});
+                await sleep(WAIT_MS);
+                await debugLoginDom(page);
 
-                    // Handle cookie/consent banners if present
-                    try {
-                        const consentBtn = page.getByRole('button', { name: /accept|agree|got it|aceptar|consent/i });
-                        if (await consentBtn.count()) {
-                            await consentBtn.first().click({ timeout: 2000 }).catch(() => {});
-                        }
-                    } catch (_) {}
-
-                    if (!page.url().includes('dashboard')) {
-                        logs.push({ message: '📝 Filling login credentials...', level: 'info' });
-                        const ok = await safeFillAndSubmit(page, email, password);
-                        if (!ok) throw new Error('Login inputs not found');
+                // Handle cookie/consent banners if present
+                try {
+                    const consentBtn = page.getByRole('button', { name: /accept|agree|got it|aceptar|consent/i });
+                    if (await consentBtn.count()) {
+                        await consentBtn.first().click({ timeout: 2000 }).catch(() => {});
                     }
+                } catch (_) {}
+
+                if (!page.url().includes('dashboard')) {
+                    logs.push({ message: '📝 Filling login credentials...', level: 'info' });
+                    const ok = await safeFillAndSubmit(page, email, password);
+                    if (!ok) throw new Error('Login inputs not found');
+                }
 
                     // Wait for dashboard
-                    logs.push({ message: '⏳ Waiting for dashboard redirect...', level: 'info' });
-                    sendEvent({ type: 'log', level: 'info', message: '⏳ Waiting for dashboard redirect...' });
-                    const ok = await waitForUrlContains(page, 'dashboard', 30000);
-                    if (!ok) {
-                        logs.push({ message: '↪️ Forcing navigation to /dashboard', level: 'warning' });
-                        sendEvent({ type: 'log', level: 'warning', message: '↪️ Forcing navigation to /dashboard' });
-                        await page.goto('https://app.polaroo.com/dashboard', { timeout: 60000, waitUntil: 'networkidle' }).catch(()=>{});
-                        await page.waitForLoadState('networkidle').catch(()=>{});
-                    }
-                    if (!page.url().includes('dashboard')) throw new Error('No dashboard after login');
-                    logs.push({ message: '✅ Successfully logged into Polaroo!', level: 'success' });
-                    sendEvent({ type: 'log', level: 'success', message: '✅ Successfully logged into Polaroo!' });
-                }, 3, 1000, 'login');
-                
-                // Navigate to accounting dashboard
-                logs.push({ message: `🔍 Navigating to accounting dashboard...`, level: 'info' });
+                logs.push({ message: '⏳ Waiting for dashboard redirect...', level: 'info' });
+                sendEvent({ type: 'log', level: 'info', message: '⏳ Waiting for dashboard redirect...' });
+                const ok = await waitForUrlContains(page, 'dashboard', 30000);
+                if (!ok) {
+                    logs.push({ message: '↪️ Forcing navigation to /dashboard', level: 'warning' });
+                    sendEvent({ type: 'log', level: 'warning', message: '↪️ Forcing navigation to /dashboard' });
+                    await page.goto('https://app.polaroo.com/dashboard', { timeout: 60000, waitUntil: 'networkidle' }).catch(()=>{});
+                    await page.waitForLoadState('networkidle').catch(()=>{});
+                }
+                if (!page.url().includes('dashboard')) throw new Error('No dashboard after login');
+                logs.push({ message: '✅ Successfully logged into Polaroo!', level: 'success' });
+                sendEvent({ type: 'log', level: 'success', message: '✅ Successfully logged into Polaroo!' });
+            }, 3, 1000, 'login');
+            
+                    // Navigate to accounting dashboard
+                    logs.push({ message: `🔍 Navigating to accounting dashboard...`, level: 'info' });
                 sendEvent({ type: 'log', level: 'info', message: '🔍 Navigating to accounting dashboard...' });
-                await withRetry(async () => {
+                    await withRetry(async () => {
                     await page.goto('https://app.polaroo.com/dashboard/accounting', { timeout: 60000, waitUntil: 'domcontentloaded' });
                     await sleep(8000); // Wait for table to load
-                }, 2, 800, 'navigate-accounting');
-                
-                // Search for property
-                logs.push({ message: `🔍 Searching for: ${propertyName}`, level: 'info' });
-                sendEvent({ type: 'log', level: 'info', message: `🔍 Searching for: ${propertyName}` });
-                const searchInput = page.locator('input[placeholder*="search"], input[placeholder*="Search"]').first();
-                if (await searchInput.count() > 0) {
-                    await searchInput.fill(propertyName);
-                    await page.keyboard.press('Enter');
-                    await sleep(8000); // Wait for table to load
-                }
-                
-                // Wait for table to load
-                logs.push({ message: `📊 Waiting for invoice table to load...`, level: 'info' });
-                sendEvent({ type: 'log', level: 'info', message: '📊 Waiting for invoice table to load...' });
-                await page.waitForSelector('table, .table, [role="table"]', { timeout: 60000 });
-                
-                // Extract table data (only needed columns)
-                logs.push({ message: `📊 Extracting invoice data...`, level: 'info' });
-                sendEvent({ type: 'log', level: 'info', message: '📊 Extracting invoice data...' });
-                const tableData = await page.evaluate(() => {
-                    const tables = document.querySelectorAll('table, .table, [role="table"]');
-                    const data = [];
+                    }, 2, 800, 'navigate-accounting');
                     
-                    for (const table of tables) {
-                        const rows = table.querySelectorAll('tr');
-                        const headers = [];
+                    // Search for property
+                    logs.push({ message: `🔍 Searching for: ${propertyName}`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: `🔍 Searching for: ${propertyName}` });
+                    const searchInput = page.locator('input[placeholder*="search"], input[placeholder*="Search"]').first();
+                    if (await searchInput.count() > 0) {
+                        await searchInput.fill(propertyName);
+                        await page.keyboard.press('Enter');
+                    await sleep(8000); // Wait for table to load
+                    }
+                    
+                    // Wait for table to load
+                    logs.push({ message: `📊 Waiting for invoice table to load...`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: '📊 Waiting for invoice table to load...' });
+                    await page.waitForSelector('table, .table, [role="table"]', { timeout: 60000 });
+                    
+                // Extract table data (only needed columns)
+                    logs.push({ message: `📊 Extracting invoice data...`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: '📊 Extracting invoice data...' });
+                    const tableData = await page.evaluate(() => {
+                        const tables = document.querySelectorAll('table, .table, [role="table"]');
+                        const data = [];
                         
-                        if (rows.length > 0) {
-                            const headerRow = rows[0];
-                            const headerCells = headerRow.querySelectorAll('th, td');
-                            for (const cell of headerCells) {
-                                headers.push(cell.textContent.trim());
-                            }
-                        }
-                        
-                        for (let i = 1; i < rows.length; i++) {
-                            const row = rows[i];
-                            const cells = row.querySelectorAll('td, th');
-                            const rowData = {};
+                        for (const table of tables) {
+                            const rows = table.querySelectorAll('tr');
+                            const headers = [];
                             
-                            for (let j = 0; j < cells.length && j < headers.length; j++) {
-                                const cellText = cells[j].textContent.trim();
+                            if (rows.length > 0) {
+                                const headerRow = rows[0];
+                                const headerCells = headerRow.querySelectorAll('th, td');
+                                for (const cell of headerCells) {
+                                    headers.push(cell.textContent.trim());
+                                }
+                            }
+                            
+                            for (let i = 1; i < rows.length; i++) {
+                                const row = rows[i];
+                                const cells = row.querySelectorAll('td, th');
+                                const rowData = {};
+                                
+                                for (let j = 0; j < cells.length && j < headers.length; j++) {
+                                    const cellText = cells[j].textContent.trim();
                                 const header = headers[j];
                                 
                                 // Only extract needed columns
                                 if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes', 'Total'].includes(header)) {
                                     rowData[header] = cellText;
                                 }
-                            }
-                            
-                            if (Object.keys(rowData).length > 0) {
-                                data.push(rowData);
+                                }
+                                
+                                if (Object.keys(rowData).length > 0) {
+                                    data.push(rowData);
+                                }
                             }
                         }
-                    }
+                        
+                        return data;
+                    });
                     
-                    return data;
-                });
-                
-                logs.push({ message: `📋 Found ${tableData.length} total bills`, level: 'info' });
-                sendEvent({ type: 'log', level: 'info', message: `📋 Found ${tableData.length} total bills` });
-                
+                    logs.push({ message: `📋 Found ${tableData.length} total bills`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: `📋 Found ${tableData.length} total bills` });
+                    
                 // Filter bills by month and service type
                 logs.push({ message: `🔍 Filtering bills by month and service...`, level: 'info' });
                 sendEvent({ type: 'log', level: 'info', message: '🔍 Filtering bills by month and service...' });
@@ -750,9 +750,9 @@ app.post('/api/process-properties', async (req, res) => {
                 logs.push({ message: `📊 Total Cost: ${totalCost.toFixed(2)} €, Allowance: ${totalAllowance} €, Overuse: ${overuseAmount.toFixed(2)} €`, level: 'success' });
                 
                 // Create result
-                const result = {
-                    property: propertyName,
-                    success: true,
+                    const result = {
+                        property: propertyName,
+                        success: true,
                     electricity_bills: electricityBills.length,
                     water_bills: waterBills.length,
                     electricity_cost: electricityCost,
@@ -760,24 +760,24 @@ app.post('/api/process-properties', async (req, res) => {
                     total_cost: totalCost,
                     overuse_amount: overuseAmount,
                     rooms: roomCount
-                };
-                
-                results.push(result);
+                    };
+                    
+                    results.push(result);
                 logs.push({ message: `✅ COMPLETED: ${propertyName} - ${electricityBills.length} elec + ${waterBills.length} water = ${overuseAmount.toFixed(2)} € overuse`, level: 'success' });
-                sendEvent({ type: 'log', level: 'success', message: `✅ COMPLETED: ${propertyName}` });
+                    sendEvent({ type: 'log', level: 'success', message: `✅ COMPLETED: ${propertyName}` });
+                    
+                } catch (error) {
+                    console.error(`❌ Error processing ${propertyName}:`, error.message);
                 
-            } catch (error) {
-                console.error(`❌ Error processing ${propertyName}:`, error.message);
+                    const result = {
+                        property: propertyName,
+                        success: false,
+                        error: error.message
+                    };
                 
-                const result = {
-                    property: propertyName,
-                    success: false,
-                    error: error.message
-                };
-                
-                results.push(result);
-                logs.push({ message: `❌ Failed to process ${propertyName}: ${error.message}`, level: 'error' });
-                sendEvent({ type: 'log', level: 'error', message: `❌ Failed: ${propertyName} - ${error.message}` });
+                    results.push(result);
+                    logs.push({ message: `❌ Failed to process ${propertyName}: ${error.message}`, level: 'error' });
+                    sendEvent({ type: 'log', level: 'error', message: `❌ Failed: ${propertyName} - ${error.message}` });
             } finally {
                 // Cleanup browser session for this property
                 await cleanupBrowserSession(browser, context);
@@ -804,6 +804,26 @@ app.post('/api/process-properties', async (req, res) => {
             message: 'Processing failed',
             error: error.message
         });
+    }
+});
+
+// TEST ONLY: Export overuse data for HouseMonk integration testing
+app.post('/api/export-test-data', (req, res) => {
+    try {
+        const { results } = req.body;
+        if (!results || !Array.isArray(results)) {
+            return res.status(400).json({ success: false, message: 'Invalid results data' });
+        }
+        
+        const overuseOnly = results.filter(r => r.overuse_amount > 0).slice(0, 5);
+        fs.writeFileSync('test_overuse_data.json', JSON.stringify(overuseOnly, null, 2));
+        
+        console.log(`📥 Exported ${overuseOnly.length} properties with overuse to test_overuse_data.json`);
+        
+        res.json({ success: true, count: overuseOnly.length });
+    } catch (error) {
+        console.error('Error exporting test data:', error);
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
