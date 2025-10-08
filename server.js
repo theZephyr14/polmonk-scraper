@@ -771,6 +771,56 @@ app.post('/api/process-properties', async (req, res) => {
                 page?.evaluate?.(() => 0).catch(() => {});
             }, 3000);
         } catch (_) {}
+
+        // Browser reconnection function
+        async function reconnectBrowser() {
+            try {
+                logs.push({ message: `🔄 Attempting browser reconnection...`, level: 'warning' });
+                sendEvent({ type: 'log', level: 'warning', message: '🔄 Attempting browser reconnection...' });
+                
+                // Close existing connections
+                try {
+                    if (context && typeof context.close === 'function') {
+                        await context.close();
+                    } else if (browser) {
+                        await browser.close();
+                    }
+                } catch (_) {}
+                
+                // Reconnect to remote browser
+                if (remoteWs) {
+                    browser = await chromium.connectOverCDP(remoteWs);
+                    context = await browser.newContext({
+                        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+                        locale: 'en-US',
+                        timezoneId: 'Europe/Madrid',
+                    });
+                    page = await context.newPage();
+                    
+                    // Re-setup page configuration
+                    await page.addInitScript(() => {
+                        Object.defineProperty(navigator, 'webdriver', { get: () => false });
+                        Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+                        Object.defineProperty(navigator, 'plugins', { get: () => [1,2,3,4,5] });
+                        window.chrome = { runtime: {} };
+                    });
+                    await page.setViewportSize?.({ width: 1366, height: 768 });
+                    await context.setExtraHTTPHeaders?.({ 'Accept-Language': 'en-US,en;q=0.9' });
+                    page.setDefaultTimeout(15000);
+                    page.setDefaultNavigationTimeout(30000);
+                    
+                    logs.push({ message: `✅ Browser reconnected successfully`, level: 'success' });
+                    sendEvent({ type: 'log', level: 'success', message: '✅ Browser reconnected successfully' });
+                    return true;
+                } else {
+                    throw new Error('No remote browser URL available for reconnection');
+                }
+            } catch (error) {
+                logs.push({ message: `❌ Browser reconnection failed: ${error.message}`, level: 'error' });
+                sendEvent({ type: 'log', level: 'error', message: `❌ Browser reconnection failed: ${error.message}` });
+                return false;
+            }
+        }
         
         const results = [];
         const logs = [];
@@ -998,6 +1048,51 @@ app.post('/api/process-properties', async (req, res) => {
                     
                 } catch (error) {
                     console.error(`❌ Error processing ${propertyName}:`, error.message);
+                    
+                    // Check if it's a browser disconnection error
+                    const isBrowserDisconnected = error.message.includes('closed') || 
+                                                error.message.includes('disconnected') || 
+                                                error.message.includes('Target page, context or browser has been closed');
+                    
+                    if (isBrowserDisconnected) {
+                        logs.push({ message: `🔄 Browser disconnected while processing ${propertyName}, attempting reconnection...`, level: 'warning' });
+                        sendEvent({ type: 'log', level: 'warning', message: `🔄 Browser disconnected, attempting reconnection...` });
+                        
+                        // Attempt to reconnect
+                        const reconnected = await reconnectBrowser();
+                        if (reconnected) {
+                            // Re-login after reconnection
+                            try {
+                                logs.push({ message: `🔑 Re-logging into Polaroo after reconnection...`, level: 'info' });
+                                sendEvent({ type: 'log', level: 'info', message: '🔑 Re-logging into Polaroo...' });
+                                
+                                await page.goto('https://app.polaroo.com/login', { timeout: 60000, waitUntil: 'domcontentloaded' });
+                                await sleep(2000);
+                                
+                                const ok = await safeFillAndSubmit(page, email, password);
+                                if (ok) {
+                                    const dashboardOk = await waitForUrlContains(page, 'dashboard', 30000);
+                                    if (dashboardOk) {
+                                        logs.push({ message: `✅ Re-login successful, continuing with next property...`, level: 'success' });
+                                        sendEvent({ type: 'log', level: 'success', message: '✅ Re-login successful' });
+                                        
+                                        // Skip this property and continue with next
+                                        const result = {
+                                            property: propertyName,
+                                            success: false,
+                                            error: 'Browser disconnected, skipped after reconnection'
+                                        };
+                                        results.push(result);
+                                        logs.push({ message: `⏭️ Skipped ${propertyName} due to browser disconnection`, level: 'warning' });
+                                        continue; // Skip to next property
+                                    }
+                                }
+                            } catch (loginError) {
+                                logs.push({ message: `❌ Re-login failed: ${loginError.message}`, level: 'error' });
+                            }
+                        }
+                    }
+                    
                     const result = {
                         property: propertyName,
                         success: false,
