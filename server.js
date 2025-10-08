@@ -1,4 +1,4 @@
-const express = require('express');
+ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -932,10 +932,41 @@ app.post('/api/process-properties', async (req, res) => {
                     logs.push({ message: `📋 Found ${tableData.length} total bills`, level: 'info' });
                     sendEvent({ type: 'log', level: 'info', message: `📋 Found ${tableData.length} total bills` });
                     
-                    // Use Cohere API for intelligent analysis
-                    logs.push({ message: `🤖 Analyzing bills with Cohere AI...`, level: 'info' });
-                    sendEvent({ type: 'log', level: 'info', message: '🤖 Analyzing bills with Cohere AI...' });
-                    const analysis = await analyzeWithCohere(tableData, propertyName);
+                    // Debug: Log the actual table data being extracted
+                    console.log(`🔍 DEBUG - Table data for ${propertyName}:`, JSON.stringify(tableData, null, 2));
+                    logs.push({ message: `🔍 DEBUG - First 3 rows: ${JSON.stringify(tableData.slice(0, 3), null, 2)}`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: `🔍 DEBUG - First 3 rows extracted` });
+                    
+                    // Validate table data before sending to Cohere
+                    let analysis;
+                    if (!tableData || tableData.length === 0) {
+                        logs.push({ message: `⚠️ No table data found for ${propertyName}, using fallback analysis`, level: 'warning' });
+                        sendEvent({ type: 'log', level: 'warning', message: `⚠️ No table data found for ${propertyName}` });
+                        analysis = analyzeWithFallback([], propertyName);
+                    } else {
+                        // Check if data has meaningful content (not just empty strings)
+                        const hasValidData = tableData.some(row => 
+                            Object.values(row).some(value => value && value.toString().trim() !== '')
+                        );
+                        
+                        if (!hasValidData) {
+                            logs.push({ message: `⚠️ Table data appears empty for ${propertyName}, using fallback analysis`, level: 'warning' });
+                            sendEvent({ type: 'log', level: 'warning', message: `⚠️ Table data appears empty for ${propertyName}` });
+                            analysis = analyzeWithFallback(tableData, propertyName);
+                        } else {
+                            // Use Cohere API for intelligent analysis
+                            logs.push({ message: `🤖 Analyzing bills with Cohere AI...`, level: 'info' });
+                            sendEvent({ type: 'log', level: 'info', message: '🤖 Analyzing bills with Cohere AI...' });
+                            
+                            try {
+                                analysis = await analyzeWithCohere(tableData, propertyName);
+                            } catch (cohereError) {
+                                logs.push({ message: `⚠️ Cohere API failed: ${cohereError.message}, using fallback analysis`, level: 'warning' });
+                                sendEvent({ type: 'log', level: 'warning', message: `⚠️ Cohere API failed, using fallback` });
+                                analysis = analyzeWithFallback(tableData, propertyName);
+                            }
+                        }
+                    }
                     
                     logs.push({ message: `⚡ Found ${analysis.electricity_bills.length} electricity bills`, level: 'info' });
                     logs.push({ message: `💧 Found ${analysis.water_bills.length} water bills`, level: 'info' });
