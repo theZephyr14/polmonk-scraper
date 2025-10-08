@@ -163,20 +163,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const period = document.getElementById('monthPair')?.value || 'Jul-Aug';
         const limit10 = document.getElementById('limit10')?.checked || false;
         
-        // Get property names
-        const propertyNames = excelData
-            .map(row => row[0])
-            .filter(name => name && name.toString().trim() !== '')
-            .slice(1);
+        // Get properties with names and room counts
+        const properties = excelData
+            .slice(1) // Remove header row
+            .map(row => ({
+                name: row[0] ? row[0].toString().trim() : '',
+                rooms: row[1] ? parseInt(row[1]) || 0 : 0
+            }))
+            .filter(prop => prop.name !== '');
         
-        if (propertyNames.length === 0) {
+        if (properties.length === 0) {
             showMessage('No property names found', 'error');
             return;
         }
         
         // Show modal and start processing
         showProcessingModal();
-        await processProperties(limit10 ? propertyNames.slice(0, 10) : propertyNames, period);
+        await processProperties(limit10 ? properties.slice(0, 10) : properties, period);
     });
     
     // Close modal
@@ -200,21 +203,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const propertiesList = document.getElementById('propertiesList');
         propertiesList.innerHTML = '';
         
-        // Get the first column (property names)
-        const propertyNames = excelData
-            .map(row => row[0]) // Get first column
-            .filter(name => name && name.toString().trim() !== '') // Remove empty values
-            .slice(1); // Remove header row if it exists
+        // Get property names and room counts from first two columns
+        const properties = excelData
+            .slice(1) // Remove header row
+            .map(row => ({
+                name: row[0] ? row[0].toString().trim() : '',
+                rooms: row[1] ? parseInt(row[1]) || 0 : 0
+            }))
+            .filter(prop => prop.name !== ''); // Remove empty property names
         
-        if (propertyNames.length === 0) {
+        if (properties.length === 0) {
             propertiesList.innerHTML = '<p>No property names found in the first column</p>';
             return;
         }
         
-        propertyNames.forEach((name, index) => {
+        properties.forEach((property, index) => {
             const propertyItem = document.createElement('div');
             propertyItem.className = 'property-item';
-            propertyItem.textContent = `${index + 1}. ${name}`;
+            propertyItem.textContent = `${index + 1}. ${property.name} (${property.rooms} rooms)`;
             propertiesList.appendChild(propertyItem);
         });
         
@@ -243,10 +249,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('progressText').textContent = `${Math.round(percentage)}%`;
     }
     
-    async function processProperties(propertyNames, period) {
+    async function processProperties(properties, period) {
         try {
             addLogEntry('Starting Polaroo processing...', 'info');
-            addLogEntry(`Found ${propertyNames.length} properties to process`, 'info');
+            addLogEntry(`Found ${properties.length} properties to process`, 'info');
             
             // Show initial progress
             updateProgress(10);
@@ -272,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    properties: propertyNames,
+                    properties: properties,
                     period
                 })
             });
@@ -353,32 +359,24 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="detail-value electricity">${result.electricity_bills} bills</div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-label">⚡ Electricity Overuse</div>
-                            <div class="detail-value electricity">${result.electricity_overuse || 0} units</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">⚡ Electricity Cost</div>
-                            <div class="detail-value electricity">${result.electricity_cost || '0.00'} €</div>
-                        </div>
-                        <div class="detail-item">
                             <div class="detail-label">💧 Water Bills</div>
                             <div class="detail-value water">${result.water_bills} bills</div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-label">💧 Water Overuse</div>
-                            <div class="detail-value water">${result.water_overuse || 0} units</div>
+                            <div class="detail-label">⚡ Electricity Cost</div>
+                            <div class="detail-value electricity">${result.electricity_cost ? result.electricity_cost.toFixed(2) : '0.00'} €</div>
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">💧 Water Cost</div>
-                            <div class="detail-value water">${result.water_cost || '0.00'} €</div>
+                            <div class="detail-value water">${result.water_cost ? result.water_cost.toFixed(2) : '0.00'} €</div>
                         </div>
                         <div class="detail-item" style="border-top: 2px solid #333; margin-top: 10px; padding-top: 10px;">
-                            <div class="detail-label">🎯 Total Overuse</div>
-                            <div class="detail-value total" style="font-size: 18px; font-weight: bold;">${result.total_overuse || 0} units</div>
+                            <div class="detail-label">💰 Total Overuse</div>
+                            <div class="detail-value total" style="font-size: 18px; font-weight: bold;">${result.overuse_amount ? result.overuse_amount.toFixed(2) : '0.00'} €</div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-label">💰 Total Cost</div>
-                            <div class="detail-value total" style="font-size: 18px; font-weight: bold;">${result.total_cost || '0.00'} €</div>
+                            <div class="detail-label">🏠 Rooms</div>
+                            <div class="detail-value">${result.rooms || 0}</div>
                         </div>
                     </div>
                 ` : `
