@@ -579,6 +579,10 @@ app.post('/api/process-properties', async (req, res) => {
             const propertyName = property.name || property; // Handle both old and new format
             const roomCount = property.rooms || 0;
             
+            // Update progress bar
+            const progressPercentage = Math.round(((i + 1) / totalToProcess) * 100);
+            sendEvent({ type: 'progress', percentage: progressPercentage });
+            
             logs.push({ message: `🏠 Processing property ${i + 1}/${totalToProcess}: ${propertyName} (${roomCount} rooms)`, level: 'info' });
             sendEvent({ type: 'log', level: 'info', message: `🏠 Processing property ${i + 1}/${totalToProcess}: ${propertyName}` });
             
