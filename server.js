@@ -86,6 +86,33 @@ function jitter(min = 200, max = 800) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// Detect Browserless 429 responses and websocket closure indicating throttling
+function isBrowserless429(err) {
+    const m = String(err?.message || err);
+    return m.includes('429 Too Many Requests') || /code=1006/.test(m);
+}
+
+// Wrapper to create a session with exponential backoff on 429
+async function connectWithBackoff(maxAttempts = 5) {
+    let lastErr;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            // gentle delay even before first try to avoid burst
+            if (attempt === 1) {
+                await sleep(2500 + Math.floor(Math.random() * 1000));
+            }
+            return await createBrowserSession();
+        } catch (e) {
+            lastErr = e;
+            if (!isBrowserless429(e)) throw e;
+            const delayMs = Math.min(16000, 2000 * Math.pow(2, attempt - 1));
+            try { sendEvent({ type: 'log', level: 'warning', message: `⏳ Browserless 429 - backing off ${delayMs}ms (attempt ${attempt}/${maxAttempts})` }); } catch(_) {}
+            await sleep(delayMs);
+        }
+    }
+    throw lastErr;
+}
+
 async function withRetry(task, attempts = 3, backoffMs = 800, label = 'step') {
     let lastErr;
     for (let i = 1; i <= attempts; i++) {
@@ -456,31 +483,42 @@ async function cleanupBrowserSession(browser, context) {
     }
 }
 
-// Helper function to filter bills by month and service type
+// Helper function to filter bills: exactly 1 electricity per month, and 1 water for second month
 function filterBillsByMonth(tableData, targetMonths) {
-    const electricityBills = [];
-    const waterBills = [];
-    
+    // Normalize rows
+    const rows = [];
     for (const bill of tableData) {
-        const finalDate = bill['Final date'];
-        if (!finalDate) continue;
-        
-        // Parse date (format: DD/MM/YYYY)
-        const dateParts = finalDate.split('/');
-        if (dateParts.length !== 3) continue;
-        
-        const month = parseInt(dateParts[1]);
-        if (!targetMonths.includes(month)) continue;
-        
-        const service = bill.Service?.toLowerCase() || '';
-        if (service.includes('electricity') || service.includes('electric')) {
-            electricityBills.push(bill);
-        } else if (service.includes('water') || service.includes('agua')) {
-            waterBills.push(bill);
-        }
+        const fd = bill['Final date'] || '';
+        const parts = fd.split('/');
+        if (parts.length !== 3) continue;
+        const month = parseInt(parts[1]);
+        if (!Number.isFinite(month)) continue;
+
+        const service = (bill.Service || '').toLowerCase();
+        const total = parseFloat((bill.Total || '0').replace('€', '').replace(',', '.').trim()) || 0;
+
+        rows.push({
+            raw: bill,
+            month,
+            isElec: service.includes('electric'),
+            isWater: service.includes('water') || service.includes('agua'),
+            total
+        });
     }
-    
-    return { electricity: electricityBills, water: waterBills };
+
+    // Electricity: pick exactly one per month (prefer the last occurrence)
+    const electricity = [];
+    for (const m of targetMonths) {
+        const candidates = rows.filter(r => r.isElec && r.month === m);
+        if (candidates.length > 0) electricity.push(candidates[candidates.length - 1].raw);
+    }
+
+    // Water: pick only for second month
+    const secondMonth = targetMonths[1];
+    const waterCandidates = rows.filter(r => r.isWater && r.month === secondMonth);
+    const water = waterCandidates.length > 0 ? [waterCandidates[waterCandidates.length - 1].raw] : [];
+
+    return { electricity, water };
 }
 
 // Helper function to get monthly allowance based on property and room count
@@ -571,8 +609,8 @@ app.post('/api/process-properties', async (req, res) => {
             let browser, context, page;
             
             try {
-                // Create new browser session for this property
-                const session = await createBrowserSession();
+                // Create new browser session for this property with backoff
+                const session = await connectWithBackoff(5);
                 browser = session.browser;
                 context = session.context;
                 page = session.page;
@@ -759,9 +797,9 @@ app.post('/api/process-properties', async (req, res) => {
                 await cleanupBrowserSession(browser, context);
             }
             
-            // Small delay between properties
+            // Small delay between properties (additional throttle)
             if (i < properties.length - 1) {
-                await sleep(2000 + Math.random() * 1000);
+                await sleep(2500 + Math.random() * 1500);
             }
         }
         
