@@ -775,7 +775,7 @@ app.post('/api/process-properties', async (req, res) => {
             
             // Small delay between properties (additional throttle)
             if (i < properties.length - 1) {
-                await sleep(2500 + Math.random() * 1500);
+                await sleep(5000); // fixed 5s to avoid Browserless 429 bursts
             }
         }
         
