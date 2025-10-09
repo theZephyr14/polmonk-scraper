@@ -886,31 +886,8 @@ app.post('/api/housemonk-test/auth-check', async (req, res) => {
             });
         }
 
-        // 1) Master token
-        const rt = await fetch(`${baseUrl}/api/client/refresh-token`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ clientId, clientSecret })
-        });
-        const rtJson = await rt.json();
-        if (!rt.ok) {
-            return res.status(rt.status).json({ 
-                success: false, 
-                step: 'refresh-token', 
-                response: rtJson,
-                debug: { clientId, baseUrl }
-            });
-        }
-        const masterToken = rtJson && (rtJson.token || rtJson.access_token || rtJson.masterToken || rtJson.data?.token);
-        
-        if (!masterToken) {
-            return res.status(400).json({ 
-                success: false, 
-                step: 'refresh-token', 
-                message: 'No token found in response',
-                response: rtJson
-            });
-        }
+        // 1) Use provided master token directly (from dev)
+        const masterToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZTNhNTk3MjQzYTMwM2JmYzM2ODkzMiIsIm5hbWUiOiJOb2RlIExpdmluZyBnbHluayBzYW5kYm94IiwidXVpZCI6IjNhOTNjOTAwLWEyYTYtMTFmMC05Y2UwLTViNmYwYTVkOWQ2NiIsIm9yZ2FuaXphdGlvbiI6IjY3MTVmOTc0MmIyMmEzN2UyYTRhMmJjYSIsInVpZCI6IjY3MTVmZWYzMTliYTFmN2U2YTM4ZTc2MiIsImlhdCI6MTc1OTc0OTUyOCwiZXhwIjoxNzY3NTI1NTI4fQ.hKAdUBuHz_wkcx2f-Bp7VGOCkPXenV68_qY4CuTcEHQ";
 
         // 2) User access token
         const at = await fetch(`${baseUrl}/integration/glynk/access-token`, {
