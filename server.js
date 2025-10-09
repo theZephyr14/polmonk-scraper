@@ -903,6 +903,7 @@ app.post('/api/housemonk-test/auth-check', async (req, res) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'x-api-key': clientId,
                 Authorization: `Bearer ${masterToken}`
             },
             body: JSON.stringify({ userId })
