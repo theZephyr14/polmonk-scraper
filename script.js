@@ -445,6 +445,52 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         resultsList.appendChild(pdfBtn);
         
+        // Add complete HouseMonk integration button
+        const housemonkBtn = document.createElement('button');
+        housemonkBtn.className = 'submit-btn';
+        housemonkBtn.style.marginTop = '10px';
+        housemonkBtn.style.backgroundColor = '#6f42c1';
+        housemonkBtn.textContent = '📝 Create HouseMonk Invoices (Download → Upload → Create)';
+        housemonkBtn.onclick = async () => {
+            try {
+                addLogEntry('Starting complete HouseMonk integration...', 'info');
+                addLogEntry('This will: Download PDFs → Upload to AWS → Create Invoices', 'info');
+                
+                const response = await fetch('/api/housemonk/process-overuse', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ results })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLogEntry(`✅ HouseMonk integration completed!`, 'success');
+                    addLogEntry(`📊 Results: ${data.successCount} successful, ${data.failedCount} failed`, 'info');
+                    
+                    // Show invoice links
+                    if (data.items && data.items.length > 0) {
+                        addLogEntry('🔗 Created Invoices:', 'info');
+                        data.items.forEach((item, i) => {
+                            if (item.status === 'success') {
+                                addLogEntry(`  ${i+1}. ${item.property}: ${item.invoiceUrl}`, 'success');
+                            } else {
+                                addLogEntry(`  ${i+1}. ${item.property}: FAILED - ${item.error}`, 'error');
+                            }
+                        });
+                    }
+                    
+                    alert(`✅ HouseMonk Integration Complete!\n\nSuccess: ${data.successCount}\nFailed: ${data.failedCount}\n\nCheck the logs for invoice links.`);
+                } else {
+                    addLogEntry(`❌ HouseMonk integration failed: ${data.message}`, 'error');
+                    alert(`❌ HouseMonk integration failed: ${data.message}`);
+                }
+            } catch (error) {
+                addLogEntry(`❌ HouseMonk integration failed: ${error.message}`, 'error');
+                alert(`❌ HouseMonk integration failed: ${error.message}`);
+            }
+        };
+        resultsList.appendChild(housemonkBtn);
+        
         resultsContainer.style.display = 'block';
     }
     

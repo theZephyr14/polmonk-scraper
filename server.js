@@ -1074,6 +1074,159 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
     }
 });
 
+// Complete HouseMonk integration: Download PDFs → Upload to S3 → Create Invoices
+app.post('/api/housemonk/process-overuse', async (req, res) => {
+    try {
+        const { results } = req.body;
+        
+        if (!results || !Array.isArray(results)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid results data'
+            });
+        }
+        
+        // Filter properties with overuse > 0
+        const overuseProperties = results.filter(prop => prop.overuse_amount > 0);
+        
+        if (overuseProperties.length === 0) {
+            return res.json({
+                success: true,
+                message: 'No properties with overuse found',
+                count: 0,
+                successCount: 0,
+                failedCount: 0,
+                items: []
+            });
+        }
+        
+        console.log(`🏠 Processing ${overuseProperties.length} properties with overuse for HouseMonk integration`);
+        
+        // Import required modules
+        const { HouseMonkAuth, HouseMonkIDResolver } = require('./test_modules/housemonk_auth');
+        const { downloadPdfsForProperty } = require('./test_modules/pdf_downloader');
+        const { uploadPdfAndMetadata } = require('./test_modules/aws_uploader');
+        const { createInvoiceForOveruse } = require('./test_modules/invoice_creator');
+        
+        // Initialize HouseMonk authentication
+        console.log('🔐 Initializing HouseMonk authentication...');
+        const auth = new HouseMonkAuth();
+        await auth.refreshMasterToken();
+        await auth.getUserAccessToken(auth.config.userId);
+        console.log('✅ HouseMonk authentication successful');
+        
+        const resolver = new HouseMonkIDResolver(auth);
+        const items = [];
+        let successCount = 0;
+        let failedCount = 0;
+        
+        // Process each property
+        for (let i = 0; i < overuseProperties.length; i++) {
+            const prop = overuseProperties[i];
+            console.log(`\n[${i+1}/${overuseProperties.length}] Processing: ${prop.property}`);
+            console.log(`💰 Overuse: ${prop.overuse_amount.toFixed(2)} €`);
+            
+            try {
+                // Step 1: Download PDFs from Polaroo
+                console.log('📥 Step 1: Downloading PDFs from Polaroo...');
+                const browserWsUrl = process.env.BROWSER_WS_URL || process.env.BROWSERLESS_WS_URL || 'wss://production-sfo.browserless.io?token=2TBdtRaSfCJdCtrf0150e386f6b4e285c10a465d3bcf4caf5';
+                
+                const pdfs = await downloadPdfsForProperty(
+                    prop.property,
+                    prop.selected_bills || [],
+                    browserWsUrl,
+                    process.env.POLAROO_EMAIL || 'francisco@node-living.com',
+                    process.env.POLAROO_PASSWORD || 'Aribau126!'
+                );
+                
+                console.log(`✅ Downloaded ${pdfs.length} PDFs`);
+                
+                // Step 2: Upload PDFs to HouseMonk AWS S3
+                console.log('☁️ Step 2: Uploading to HouseMonk AWS S3...');
+                const uploadResults = [];
+                for (const pdf of pdfs) {
+                    const result = await uploadPdfAndMetadata(auth, pdf.buffer, pdf.fileName, prop);
+                    uploadResults.push(result);
+                }
+                
+                const pdfObjectKeys = uploadResults.map(r => r.pdfObjectKey);
+                const jsonObjectKeys = uploadResults.flatMap(r => r.jsonObjectKeys);
+                
+                console.log(`✅ Uploaded ${uploadResults.length} PDFs with metadata`);
+                
+                // Step 3: Create invoice in HouseMonk
+                console.log('📝 Step 3: Creating invoice in HouseMonk...');
+                const invoice = await createInvoiceForOveruse(
+                    auth,
+                    resolver,
+                    prop,
+                    pdfObjectKeys,
+                    jsonObjectKeys
+                );
+                
+                console.log(`✅ Invoice created: ${invoice._id}`);
+                
+                items.push({
+                    property: prop.property,
+                    status: 'success',
+                    invoiceId: invoice._id,
+                    invoiceUrl: `${auth.config.baseUrl}/dashboard/transactions/${invoice._id}`,
+                    overuseAmount: prop.overuse_amount,
+                    pdfCount: pdfs.length,
+                    aws: {
+                        pdfs: pdfObjectKeys,
+                        json: jsonObjectKeys
+                    }
+                });
+                
+                successCount++;
+                console.log(`🎉 Completed: ${prop.property}`);
+                
+            } catch (error) {
+                console.error(`❌ Failed: ${prop.property} - ${error.message}`);
+                items.push({
+                    property: prop.property,
+                    status: 'failed',
+                    error: error.message,
+                    overuseAmount: prop.overuse_amount
+                });
+                failedCount++;
+            }
+            
+            // Throttling delay between properties
+            if (i < overuseProperties.length - 1) {
+                const delaySeconds = 25;
+                console.log(`⏳ Waiting ${delaySeconds}s before next property...`);
+                await new Promise(r => setTimeout(r, delaySeconds * 1000));
+            }
+        }
+        
+        // Save results to file
+        const fs = require('fs');
+        fs.writeFileSync('test_housemonk_results.json', JSON.stringify(items, null, 2));
+        
+        console.log(`\n🎉 HouseMonk integration complete!`);
+        console.log(`✅ Success: ${successCount}`);
+        console.log(`❌ Failed: ${failedCount}`);
+        
+        return res.json({
+            success: true,
+            message: `HouseMonk integration completed: ${successCount} successful, ${failedCount} failed`,
+            count: overuseProperties.length,
+            successCount,
+            failedCount,
+            items
+        });
+        
+    } catch (error) {
+        console.error('❌ HouseMonk integration failed:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
