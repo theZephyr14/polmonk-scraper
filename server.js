@@ -814,8 +814,8 @@ app.post('/api/export-test-data', (req, res) => {
         if (!results || !Array.isArray(results)) {
             return res.status(400).json({ success: false, message: 'Invalid results data' });
         }
-        
-        const overuseOnly = results.filter(r => r.overuse_amount > 0).slice(0, 5);
+    
+        const overuseOnly = results.filter(r => r.overuse_amount > 0).slice(0, 3);
         fs.writeFileSync('test_overuse_data.json', JSON.stringify(overuseOnly, null, 2));
         
         console.log(`📥 Exported ${overuseOnly.length} properties with overuse to test_overuse_data.json`);
@@ -839,6 +839,21 @@ app.get('/api/housemonk-test/summary', (req, res) => {
         res.json({ success: true, exists: true, count: properties.length, properties });
     } catch (error) {
         console.error('Error reading test_overuse_data.json:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// TEST ONLY: Return the full exported JSON file for download
+app.get('/api/housemonk-test/file', (req, res) => {
+    try {
+        const filePath = 'test_overuse_data.json';
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ success: false, message: 'test_overuse_data.json not found' });
+        }
+        res.setHeader('Content-Type', 'application/json');
+        res.send(fs.readFileSync(filePath, 'utf8'));
+    } catch (error) {
+        console.error('Error sending test_overuse_data.json:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
