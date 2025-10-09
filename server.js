@@ -844,6 +844,26 @@ app.use((error, req, res, next) => {
     });
 });
 
+// TEST ONLY: Export overuse data for HouseMonk integration testing
+app.post('/api/export-test-data', (req, res) => {
+    try {
+        const { results } = req.body;
+        if (!results || !Array.isArray(results)) {
+            return res.status(400).json({ success: false, message: 'Invalid results data' });
+        }
+        
+        const overuseOnly = results.filter(r => r.overuse_amount > 0).slice(0, 5);
+        fs.writeFileSync('test_overuse_data.json', JSON.stringify(overuseOnly, null, 2));
+        
+        console.log(`📥 Exported ${overuseOnly.length} properties with overuse to test_overuse_data.json`);
+        
+        res.json({ success: true, count: overuseOnly.length });
+    } catch (error) {
+        console.error('Error exporting test data:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`Visit: http://localhost:${PORT}`);
