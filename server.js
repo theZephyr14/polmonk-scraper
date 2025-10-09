@@ -894,9 +894,23 @@ app.post('/api/housemonk-test/auth-check', async (req, res) => {
         });
         const rtJson = await rt.json();
         if (!rt.ok) {
-            return res.status(rt.status).json({ success: false, step: 'refresh-token', response: rtJson });
+            return res.status(rt.status).json({ 
+                success: false, 
+                step: 'refresh-token', 
+                response: rtJson,
+                debug: { clientId, baseUrl }
+            });
         }
         const masterToken = rtJson && (rtJson.token || rtJson.access_token || rtJson.masterToken || rtJson.data?.token);
+        
+        if (!masterToken) {
+            return res.status(400).json({ 
+                success: false, 
+                step: 'refresh-token', 
+                message: 'No token found in response',
+                response: rtJson
+            });
+        }
 
         // 2) User access token
         const at = await fetch(`${baseUrl}/integration/glynk/access-token`, {
@@ -910,11 +924,29 @@ app.post('/api/housemonk-test/auth-check', async (req, res) => {
         });
         const atJson = await at.json();
         if (!at.ok) {
-            return res.status(at.status).json({ success: false, step: 'user-access-token', response: atJson });
+            return res.status(at.status).json({ 
+                success: false, 
+                step: 'user-access-token', 
+                response: atJson,
+                debug: { 
+                    masterTokenLength: masterToken ? masterToken.length : 0,
+                    userId,
+                    baseUrl
+                }
+            });
         }
 
         const accessToken = atJson && (atJson.token || atJson.access_token || atJson.data?.token);
-        return res.json({ success: true, baseUrl, masterToken: Boolean(masterToken), accessToken: Boolean(accessToken) });
+        return res.json({ 
+            success: true, 
+            baseUrl, 
+            masterToken: Boolean(masterToken), 
+            accessToken: Boolean(accessToken),
+            debug: {
+                masterTokenLength: masterToken ? masterToken.length : 0,
+                accessTokenLength: accessToken ? accessToken.length : 0
+            }
+        });
     } catch (error) {
         console.error('HouseMonk auth-check error:', error);
         res.status(500).json({ success: false, message: error.message });
