@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "install-playwright": "npx playwright install chromium"
+    "install-playwright": "npx playwright install chromium",
+    "test:hm:smoke": "node test_housemonk_smoke.js"
   },
   "keywords": ["login", "excel", "upload", "web", "polaroo", "scraping"],
   "author": "",
