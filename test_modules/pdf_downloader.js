@@ -5,8 +5,25 @@ const axios = require('axios');
 async function downloadPdfsForProperty(propertyName, selectedBills, browserWsUrl, polarooEmail, polarooPassword) {
     console.log(`📥 Starting PDF download for: ${propertyName}`);
     
-    // Connect to Browserless
-    const browser = await chromium.connectOverCDP(browserWsUrl);
+    // Connect to browser (local or remote)
+    let browser;
+    if (browserWsUrl) {
+        // Use remote Browserless
+        console.log('🌐 Connecting to remote browser...');
+        browser = await chromium.connectOverCDP(browserWsUrl);
+    } else {
+        // Use local browser
+        console.log('🖥️ Using local browser...');
+        browser = await chromium.launch({ 
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-blink-features=AutomationControlled'
+            ]
+        });
+    }
     const context = await browser.newContext();
     const page = await context.newPage();
     

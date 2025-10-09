@@ -163,12 +163,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const period = document.getElementById('monthPair')?.value || 'Jul-Aug';
         const limit10 = document.getElementById('limit10')?.checked || false;
         
-        // Get properties with names and room counts
+        // Get properties with names, room counts, and unit codes
         const properties = excelData
             .slice(1) // Remove header row
             .map(row => ({
                 name: row[0] ? row[0].toString().trim() : '',
-                rooms: row[1] ? parseInt(row[1]) || 0 : 0
+                rooms: row[1] ? parseInt(row[1]) || 0 : 0,
+                unitCode: row[2] ? row[2].toString().trim() : ''
             }))
             .filter(prop => prop.name !== '');
         
@@ -203,12 +204,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const propertiesList = document.getElementById('propertiesList');
         propertiesList.innerHTML = '';
         
-        // Get property names and room counts from first two columns
+        // Get property names, room counts, and unit codes from first three columns
         const properties = excelData
             .slice(1) // Remove header row
             .map(row => ({
                 name: row[0] ? row[0].toString().trim() : '',
-                rooms: row[1] ? parseInt(row[1]) || 0 : 0
+                rooms: row[1] ? parseInt(row[1]) || 0 : 0,
+                unitCode: row[2] ? row[2].toString().trim() : ''
             }))
             .filter(prop => prop.name !== ''); // Remove empty property names
         
@@ -220,7 +222,8 @@ document.addEventListener('DOMContentLoaded', function() {
         properties.forEach((property, index) => {
             const propertyItem = document.createElement('div');
             propertyItem.className = 'property-item';
-            propertyItem.textContent = `${index + 1}. ${property.name} (${property.rooms} rooms)`;
+            const unitCodeText = property.unitCode ? ` - Unit: ${property.unitCode}` : '';
+            propertyItem.textContent = `${index + 1}. ${property.name} (${property.rooms} rooms${unitCodeText})`;
             propertiesList.appendChild(propertyItem);
         });
         
@@ -412,6 +415,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
         resultsList.appendChild(exportBtn);
+        
+        // Add PDF download button for overuse properties
+        const pdfBtn = document.createElement('button');
+        pdfBtn.className = 'submit-btn';
+        pdfBtn.style.marginTop = '10px';
+        pdfBtn.style.backgroundColor = '#28a745';
+        pdfBtn.textContent = '📄 Download PDFs for Overuse Properties';
+        pdfBtn.onclick = async () => {
+            try {
+                addLogEntry('Starting PDF download for overuse properties...', 'info');
+                const response = await fetch('/api/process-overuse-pdfs', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ results })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    addLogEntry(`✅ PDF download completed: ${data.message}`, 'success');
+                    alert(`✅ PDF download completed!\n\n${data.message}`);
+                } else {
+                    addLogEntry(`❌ PDF download failed: ${data.message}`, 'error');
+                    alert(`❌ PDF download failed: ${data.message}`);
+                }
+            } catch (error) {
+                addLogEntry(`❌ PDF download failed: ${error.message}`, 'error');
+                alert(`❌ PDF download failed: ${error.message}`);
+            }
+        };
+        resultsList.appendChild(pdfBtn);
         
         resultsContainer.style.display = 'block';
     }

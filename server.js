@@ -3,9 +3,13 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
+const HouseMonkAuthManager = require('./auth_manager');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Initialize HouseMonk authentication manager
+const authManager = new HouseMonkAuthManager();
 
 // Middleware
 app.use(express.json());
@@ -819,7 +823,7 @@ app.post('/api/process-properties', async (req, res) => {
     }
 });
 
-// TEST ONLY: Export overuse data for HouseMonk integration testing
+// Export overuse data for HouseMonk integration
 app.post('/api/export-test-data', (req, res) => {
     try {
         const { results } = req.body;
@@ -827,12 +831,34 @@ app.post('/api/export-test-data', (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid results data' });
         }
     
-        const overuseOnly = results.filter(r => r.overuse_amount > 0).slice(0, 3);
-        fs.writeFileSync('test_overuse_data.json', JSON.stringify(overuseOnly, null, 2));
+        // Filter only properties with overuse > 0
+        const overuseOnly = results.filter(r => r.overuse_amount > 0);
         
-        console.log(`📥 Exported ${overuseOnly.length} properties with overuse to test_overuse_data.json`);
+        // Add selected bills data for each overuse property
+        const enrichedData = overuseOnly.map(property => ({
+            ...property,
+            selected_bills: property.electricity_bills > 0 ? [
+                {
+                    Service: 'Electricity',
+                    'Initial date': '2024-01-01', // Placeholder - will be filled from actual data
+                    'Final date': '2024-01-31',
+                    Total: property.electricity_cost?.toFixed(2) || '0.00'
+                }
+            ] : [],
+            period: 'Current Period',
+            electricity_bills_count: property.electricity_bills,
+            water_bills_count: property.water_bills
+        }));
         
-        res.json({ success: true, count: overuseOnly.length });
+        fs.writeFileSync('test_overuse_data.json', JSON.stringify(enrichedData, null, 2));
+        
+        console.log(`📥 Exported ${enrichedData.length} properties with overuse to test_overuse_data.json`);
+        
+        res.json({ 
+            success: true, 
+            count: enrichedData.length,
+            message: `Exported ${enrichedData.length} properties with overuse. Run: npm run test:hm:full`
+        });
     } catch (error) {
         console.error('Error exporting test data:', error);
         res.status(500).json({ success: false, message: error.message });
@@ -870,63 +896,72 @@ app.get('/api/housemonk-test/file', (req, res) => {
     }
 });
 
-// TEST ONLY: HouseMonk sandbox auth check using env credentials (no axios)
-// Env required: HM_BASE_URL, HM_CLIENT_ID, HM_CLIENT_SECRET, HM_USER_ID
+
+// TEST ONLY: HouseMonk sandbox auth check using proper token refresh
 app.post('/api/housemonk-test/auth-check', async (req, res) => {
     try {
-        const baseUrl = process.env.HM_BASE_URL || 'https://qa1.thehousemonk.com';
-        const clientId = process.env.HM_CLIENT_ID;
-        const clientSecret = process.env.HM_CLIENT_SECRET;
-        const userId = process.env.HM_USER_ID;
-
-        if (!clientId || !clientSecret || !userId) {
-            return res.status(400).json({
-                success: false,
-                message: 'Missing HM_* env vars (HM_CLIENT_ID, HM_CLIENT_SECRET, HM_USER_ID)'
-            });
-        }
-
-        // 1) Use provided master token directly (from dev)
-        const masterToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZTNhNTk3MjQzYTMwM2JmYzM2ODkzMiIsIm5hbWUiOiJOb2RlIExpdmluZyBnbHluayBzYW5kYm94IiwidXVpZCI6IjNhOTNjOTAwLWEyYTYtMTFmMC05Y2UwLTViNmYwYTVkOWQ2NiIsIm9yZ2FuaXphdGlvbiI6IjY3MTVmOTc0MmIyMmEzN2UyYTRhMmJjYSIsInVpZCI6IjY3MTVmZWYzMTliYTFmN2U2YTM4ZTc2MiIsImlhdCI6MTc1OTc0OTUyOCwiZXhwIjoxNzY3NTI1NTI4fQ.hKAdUBuHz_wkcx2f-Bp7VGOCkPXenV68_qY4CuTcEHQ";
-
-        // 2) User access token
-        const at = await fetch(`${baseUrl}/integration/glynk/access-token`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': clientId,
-                Authorization: `Bearer ${masterToken}`
-            },
-            body: JSON.stringify({ userId })
-        });
-        const atJson = await at.json();
-        if (!at.ok) {
-            return res.status(at.status).json({ 
-                success: false, 
-                step: 'user-access-token', 
-                response: atJson,
-                debug: { 
-                    masterTokenLength: masterToken ? masterToken.length : 0,
-                    userId,
-                    baseUrl
-                }
-            });
-        }
-
-        const accessToken = atJson && (atJson.token || atJson.access_token || atJson.data?.token);
+        console.log('🔍 Testing HouseMonk authentication...');
+        
+        // Get valid tokens (will refresh if needed)
+        const masterToken = await authManager.getValidMasterToken();
+        const userToken = await authManager.getValidUserToken();
+        
+        // Get token status for debugging
+        const tokenStatus = authManager.getTokenStatus();
+        
+        console.log('✅ Authentication test successful');
+        
         return res.json({ 
             success: true, 
-            baseUrl, 
-            masterToken: Boolean(masterToken), 
-            accessToken: Boolean(accessToken),
+            message: 'Authentication working properly',
+            tokens: {
+                masterToken: Boolean(masterToken),
+                userToken: Boolean(userToken)
+            },
+            status: tokenStatus,
             debug: {
                 masterTokenLength: masterToken ? masterToken.length : 0,
-                accessTokenLength: accessToken ? accessToken.length : 0
+                userTokenLength: userToken ? userToken.length : 0
             }
         });
     } catch (error) {
-        console.error('HouseMonk auth-check error:', error);
-        res.status(500).json({ success: false, message: error.message });
+        console.error('❌ HouseMonk auth-check error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message,
+            step: 'authentication-test'
+        });
+    }
+});
+
+
+// TEST ONLY: Test making an actual API call with authentication
+app.post('/api/housemonk-test/api-call', async (req, res) => {
+    try {
+        const { endpoint = '/api/home', method = 'GET' } = req.body;
+        
+        console.log(`🔍 Testing API call: ${method} ${endpoint}`);
+        
+        // Make authenticated request
+        const response = await authManager.makeAuthenticatedRequest(method, endpoint);
+        
+        console.log('✅ API call successful');
+        
+        return res.json({
+            success: true,
+            message: 'API call successful',
+            data: response.data,
+            status: response.status,
+            headers: response.headers
+        });
+    } catch (error) {
+        console.error('❌ API call error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+        });
     }
 });
 
@@ -947,25 +982,98 @@ app.use((error, req, res, next) => {
     });
 });
 
-// TEST ONLY: Export overuse data for HouseMonk integration testing
-app.post('/api/export-test-data', (req, res) => {
+// Process overuse properties and download PDFs
+app.post('/api/process-overuse-pdfs', async (req, res) => {
     try {
         const { results } = req.body;
+        
         if (!results || !Array.isArray(results)) {
-            return res.status(400).json({ success: false, message: 'Invalid results data' });
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid results data'
+            });
         }
         
-        const overuseOnly = results.filter(r => r.overuse_amount > 0).slice(0, 5);
-        fs.writeFileSync('test_overuse_data.json', JSON.stringify(overuseOnly, null, 2));
+        // Filter properties with overuse > 0
+        const overuseProperties = results.filter(prop => prop.overuse_amount > 0);
         
-        console.log(`📥 Exported ${overuseOnly.length} properties with overuse to test_overuse_data.json`);
+        if (overuseProperties.length === 0) {
+            return res.json({
+                success: true,
+                message: 'No properties with overuse found',
+                count: 0
+            });
+        }
         
-        res.json({ success: true, count: overuseOnly.length });
+        console.log(`Processing ${overuseProperties.length} properties with overuse for PDF download`);
+        
+        // Use real Polaroo credentials for PDF download
+        const { downloadPdfsForProperty } = require('./test_modules/pdf_downloader');
+        
+        const processedProperties = [];
+        
+        for (const prop of overuseProperties) {
+            try {
+                console.log(`Downloading PDFs for ${prop.property}...`);
+                
+                // Use the same browser configuration as the main app
+                const browserWsUrl = process.env.BROWSER_WS_URL || process.env.BROWSERLESS_WS_URL || 'wss://production-sfo.browserless.io?token=2TBdtRaSfCJdCtrf0150e386f6b4e285c10a465d3bcf4caf5';
+                
+                const pdfs = await downloadPdfsForProperty(
+                    prop.property,
+                    prop.selected_bills || [],
+                    browserWsUrl, // Use the same browser config as main app
+                    'francisco@node-living.com',
+                    'Aribau126!'
+                );
+                
+                processedProperties.push({
+                    property: prop.property,
+                    overuse_amount: prop.overuse_amount,
+                    rooms: prop.rooms,
+                    unitCode: prop.unitCode || 'NOT_PROVIDED',
+                    status: 'success',
+                    message: `Downloaded ${pdfs.length} PDFs successfully`,
+                    pdfCount: pdfs.length
+                });
+                
+                console.log(`✅ Downloaded ${pdfs.length} PDFs for ${prop.property}`);
+                
+            } catch (error) {
+                console.error(`❌ Failed to download PDFs for ${prop.property}:`, error.message);
+                processedProperties.push({
+                    property: prop.property,
+                    overuse_amount: prop.overuse_amount,
+                    rooms: prop.rooms,
+                    unitCode: prop.unitCode || 'NOT_PROVIDED',
+                    status: 'failed',
+                    message: `PDF download failed: ${error.message}`,
+                    error: error.message
+                });
+            }
+        }
+        
+        const successCount = processedProperties.filter(p => p.status === 'success').length;
+        const failedCount = processedProperties.filter(p => p.status === 'failed').length;
+        
+        return res.json({
+            success: true,
+            message: `PDF download completed: ${successCount} successful, ${failedCount} failed`,
+            count: processedProperties.length,
+            successCount,
+            failedCount,
+            properties: processedProperties
+        });
+        
     } catch (error) {
-        console.error('Error exporting test data:', error);
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Error processing overuse PDFs:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 });
+
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

@@ -1,0 +1,83 @@
+[
+  {
+    "property": "Aribau 1º 1ª",
+    "success": true,
+    "electricity_bills": 2,
+    "water_bills": 1,
+    "electricity_cost": 231.58,
+    "water_cost": 56.66,
+    "total_cost": 288.24,
+    "overuse_amount": 188.24,
+    "rooms": 1,
+    "unitCode": "68e3a508243a303bfc36884f",
+    "selected_bills": [
+      {
+        "Service": "Electricity",
+        "Initial date": "2024-01-01",
+        "Final date": "2024-01-31",
+        "Total": "231.58"
+      },
+      {
+        "Service": "Water",
+        "Initial date": "2024-01-01", 
+        "Final date": "2024-01-31",
+        "Total": "56.66"
+      }
+    ],
+    "period": "Current Period",
+    "electricity_bills_count": 2,
+    "water_bills_count": 1
+  },
+  {
+    "property": "Aribau 2º 1º",
+    "success": true,
+    "electricity_bills": 2,
+    "water_bills": 0,
+    "electricity_cost": 140.20999999999998,
+    "water_cost": 0,
+    "total_cost": 140.20999999999998,
+    "overuse_amount": 40.20999999999998,
+    "rooms": 1,
+    "unitCode": "68e3a508243a303bfc36884f",
+    "selected_bills": [
+      {
+        "Service": "Electricity",
+        "Initial date": "2024-01-01",
+        "Final date": "2024-01-31", 
+        "Total": "140.21"
+      }
+    ],
+    "period": "Current Period",
+    "electricity_bills_count": 2,
+    "water_bills_count": 0
+  },
+  {
+    "property": "Aribau 2º 2º",
+    "success": true,
+    "electricity_bills": 2,
+    "water_bills": 1,
+    "electricity_cost": 138.86,
+    "water_cost": 87,
+    "total_cost": 225.86,
+    "overuse_amount": 25.860000000000014,
+    "rooms": 3,
+    "unitCode": "68e3a508243a303bfc36884f",
+    "selected_bills": [
+      {
+        "Service": "Electricity",
+        "Initial date": "2024-01-01",
+        "Final date": "2024-01-31",
+        "Total": "138.86"
+      },
+      {
+        "Service": "Water",
+        "Initial date": "2024-01-01",
+        "Final date": "2024-01-31",
+        "Total": "87.00"
+      }
+    ],
+    "period": "Current Period",
+    "electricity_bills_count": 2,
+    "water_bills_count": 1
+  }
+]

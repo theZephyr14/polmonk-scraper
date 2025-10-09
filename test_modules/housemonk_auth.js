@@ -1,17 +1,17 @@
 const axios = require('axios');
 
-// Sandbox configuration
-const SANDBOX_CONFIG = {
-    baseUrl: 'https://qa1.thehousemonk.com',
-    clientId: '3a93c900-a2a6-11f0-9ce0-5b6f0a5d9d66',
-    clientSecret: '94d8d0ba-e92f-41ea-8642-d285852bb764',
-    userId: '68e3a508243a303bfc36884f'
+// Configuration - use environment variables or fallback to sandbox
+const CONFIG = {
+    baseUrl: process.env.HM_BASE_URL || 'https://qa1.thehousemonk.com',
+    clientId: process.env.HM_CLIENT_ID || '3a93c900-a2a6-11f0-9ce0-5b6f0a5d9d66',
+    clientSecret: process.env.HM_CLIENT_SECRET || '94d8d0ba-e92f-41ea-8642-d285852bb764',
+    userId: process.env.HM_USER_ID || '68e3a508243a303bfc36884f'
 };
 
 // Enhanced authentication with auto-refresh
 class HouseMonkAuth {
     constructor() {
-        this.config = SANDBOX_CONFIG;
+        this.config = CONFIG;
         this.masterToken = null;
         this.userToken = null;
         this.tokenExpiry = null;
@@ -206,5 +206,5 @@ class HouseMonkIDResolver {
     }
 }
 
-module.exports = { HouseMonkAuth, HouseMonkIDResolver, SANDBOX_CONFIG };
+module.exports = { HouseMonkAuth, HouseMonkIDResolver, CONFIG };
 
