@@ -858,6 +858,56 @@ app.get('/api/housemonk-test/file', (req, res) => {
     }
 });
 
+// TEST ONLY: HouseMonk sandbox auth check using env credentials (no axios)
+// Env required: HM_BASE_URL, HM_CLIENT_ID, HM_CLIENT_SECRET, HM_USER_ID
+app.post('/api/housemonk-test/auth-check', async (req, res) => {
+    try {
+        const baseUrl = process.env.HM_BASE_URL || 'https://qa1.thehousemonk.com';
+        const clientId = process.env.HM_CLIENT_ID;
+        const clientSecret = process.env.HM_CLIENT_SECRET;
+        const userId = process.env.HM_USER_ID;
+
+        if (!clientId || !clientSecret || !userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing HM_* env vars (HM_CLIENT_ID, HM_CLIENT_SECRET, HM_USER_ID)'
+            });
+        }
+
+        // 1) Master token
+        const rt = await fetch(`${baseUrl}/api/client/refresh-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientId, clientSecret })
+        });
+        const rtJson = await rt.json();
+        if (!rt.ok) {
+            return res.status(rt.status).json({ success: false, step: 'refresh-token', response: rtJson });
+        }
+        const masterToken = rtJson && (rtJson.token || rtJson.access_token || rtJson.masterToken || rtJson.data?.token);
+
+        // 2) User access token
+        const at = await fetch(`${baseUrl}/integration/glynk/access-token`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${masterToken}`
+            },
+            body: JSON.stringify({ userId })
+        });
+        const atJson = await at.json();
+        if (!at.ok) {
+            return res.status(at.status).json({ success: false, step: 'user-access-token', response: atJson });
+        }
+
+        const accessToken = atJson && (atJson.token || atJson.access_token || atJson.data?.token);
+        return res.json({ success: true, baseUrl, masterToken: Boolean(masterToken), accessToken: Boolean(accessToken) });
+    } catch (error) {
+        console.error('HouseMonk auth-check error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {
