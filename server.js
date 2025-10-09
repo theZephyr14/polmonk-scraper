@@ -827,6 +827,22 @@ app.post('/api/export-test-data', (req, res) => {
     }
 });
 
+// TEST ONLY: Verify exported test data exists and return a brief summary
+app.get('/api/housemonk-test/summary', (req, res) => {
+    try {
+        const filePath = 'test_overuse_data.json';
+        if (!fs.existsSync(filePath)) {
+            return res.json({ success: true, exists: false, count: 0, properties: [] });
+        }
+        const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        const properties = (data || []).map(r => ({ property: r.property, overuse: r.overuse_amount, rooms: r.rooms }));
+        res.json({ success: true, exists: true, count: properties.length, properties });
+    } catch (error) {
+        console.error('Error reading test_overuse_data.json:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {
