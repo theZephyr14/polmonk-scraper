@@ -536,9 +536,18 @@ app.post('/api/process-properties', async (req, res) => {
             });
         }
 
-        // Temporary limit support: env TEMP_LIMIT or body.limit
-        const parsedLimit = parseInt(process.env.TEMP_LIMIT || req.body.limit, 10);
-        const effectiveLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : null;
+        // Temporary limit support: prefer body.limit, then TEMP_LIMIT, then DEFAULT_TEMP_LIMIT
+        const bodyLimit = parseInt(req.body.limit, 10);
+        const envLimit = parseInt(process.env.TEMP_LIMIT, 10);
+        const defaultEnvLimit = parseInt(process.env.DEFAULT_TEMP_LIMIT, 10); // e.g., set to 3 for tests
+        let effectiveLimit = null;
+        if (Number.isFinite(bodyLimit) && bodyLimit > 0) {
+            effectiveLimit = bodyLimit;
+        } else if (Number.isFinite(envLimit) && envLimit > 0) {
+            effectiveLimit = envLimit;
+        } else if (Number.isFinite(defaultEnvLimit) && defaultEnvLimit > 0) {
+            effectiveLimit = defaultEnvLimit;
+        }
         const totalToProcess = effectiveLimit ? Math.min(effectiveLimit, properties.length) : properties.length;
 
         console.log(`🚀 Starting processing for ${totalToProcess} properties`);
@@ -548,6 +557,9 @@ app.post('/api/process-properties', async (req, res) => {
         if (effectiveLimit) {
             console.log(`⛔ TEMP LIMIT ACTIVE: Capping run to first ${totalToProcess} properties`);
             sendEvent({ type: 'log', level: 'warning', message: `⛔ TEMP LIMIT: processing first ${totalToProcess} properties` });
+        } else {
+            console.log('ℹ️ No TEMP LIMIT provided; processing all properties');
+            sendEvent({ type: 'log', level: 'info', message: 'ℹ️ No TEMP LIMIT provided; processing all properties' });
         }
         
         // Determine target months from requested period (fallback to last 2 months if not provided)
