@@ -6,6 +6,49 @@ const axios = require('axios');
 const { chromium } = require('playwright');
 const HouseMonkAuthManager = require('./auth_manager');
 
+// Helper function to sanitize filenames
+function sanitize(name) {
+    return String(name || "").replace(/[^A-Za-z0-9_\-]+/g, "_");
+}
+
+// Build JSON metadata files for property (from New try folder)
+function buildJsonBlobsForProperty(propertyName, overuseData) {
+    const entry = Array.isArray(overuseData) 
+        ? overuseData.find(p => (p.property || "").toLowerCase() === (propertyName || "").toLowerCase())
+        : overuseData;
+
+    const nowIso = new Date().toISOString();
+    const files = [];
+
+    const summary = {
+        type: "overuse_summary",
+        property: propertyName,
+        generatedAt: nowIso,
+        overage: entry?.overuse_amount ?? null,
+        rooms: entry?.rooms ?? null,
+    };
+    files.push({ 
+        name: `${sanitize(propertyName)}_summary.json`, 
+        content: JSON.stringify(summary, null, 2) 
+    });
+
+    if (entry?.selected_bills) {
+        files.push({ 
+            name: `${sanitize(propertyName)}_selected_bills.json`, 
+            content: JSON.stringify(entry.selected_bills, null, 2) 
+        });
+    }
+
+    if (entry?.monthly_overuse) {
+        files.push({ 
+            name: `${sanitize(propertyName)}_monthly_overuse.json`, 
+            content: JSON.stringify(entry.monthly_overuse, null, 2) 
+        });
+    }
+
+    return files.slice(0, 3); // send up to 3 JSONs
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -1052,8 +1095,9 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                         const workingToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI2ODkxZGZiZjA1MmQxZDdmMzM2ZDBkNjIiLCJ0eXBlcyI6WyJhZG1pbiJdLCJpYXQiOjE3NTg1MzUzNjEsImV4cCI6MTc2NjMxMTM2MX0.wGHFL1Gd3cOODn6uHVcV5IbJ2xMZBoCoMmvydet8fRY";
                         const workingClientId = "1326bbe0-8ed1-11f0-b658-7dd414f87b53";
 
+                        // Upload PDFs
                         for (const pdf of pdfs) {
-                            // Get presigned URL
+                            // Get presigned URL for PDF
                             const presignedResponse = await axios.post(
                                 "https://dashboard.thehousemonk.com/api/document/presigned",
                                 { fileName: pdf.fileName },
@@ -1066,7 +1110,7 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                                 }
                             );
 
-                            // Upload to S3
+                            // Upload PDF to S3
                             await axios.put(presignedResponse.data.url, pdf.buffer, { 
                                 headers: { "Content-Type": "application/pdf" } 
                             });
@@ -1078,6 +1122,39 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
 
                             console.log(`✅ Uploaded PDF: ${pdf.fileName} → ${presignedResponse.data.objectKey}`);
                         }
+
+                        // Create and upload JSON metadata files
+                        const jsonFiles = buildJsonBlobsForProperty(prop.property, prop);
+                        const jsonObjectKeys = [];
+                        
+                        for (const jsonFile of jsonFiles) {
+                            // Get presigned URL for JSON
+                            const jsonPresignedResponse = await axios.post(
+                                "https://dashboard.thehousemonk.com/api/document/presigned",
+                                { fileName: jsonFile.name },
+                                { 
+                                    headers: { 
+                                        authorization: workingToken, 
+                                        "x-api-key": workingClientId, 
+                                        "content-type": "application/json" 
+                                    } 
+                                }
+                            );
+
+                            // Upload JSON to S3
+                            const jsonBuffer = Buffer.from(jsonFile.content, "utf8");
+                            await axios.put(jsonPresignedResponse.data.url, jsonBuffer, { 
+                                headers: { "Content-Type": "application/json" } 
+                            });
+
+                            jsonObjectKeys.push(jsonPresignedResponse.data.objectKey);
+                            console.log(`✅ Uploaded JSON: ${jsonFile.name} → ${jsonPresignedResponse.data.objectKey}`);
+                        }
+
+                        // Update upload results with JSON object keys
+                        uploadResults.forEach(result => {
+                            result.jsonObjectKeys = jsonObjectKeys;
+                        });
 
                         console.log(`✅ Uploaded ${pdfs.length} PDFs to AWS for ${prop.property}`);
 
@@ -1205,7 +1282,7 @@ app.post('/api/housemonk/process-overuse', async (req, res) => {
                 
                 // Use existing AWS links (no need to download/upload again)
                 const pdfObjectKeys = prop.awsObjectKeys;
-                const jsonObjectKeys = []; // We can add JSON metadata later if needed
+                const jsonObjectKeys = prop.jsonObjectKeys || []; // Use JSON metadata from Button 2
                 
                 console.log(`✅ Using existing AWS files: ${pdfObjectKeys.join(', ')}`);
                 
