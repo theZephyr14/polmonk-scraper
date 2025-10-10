@@ -1175,7 +1175,8 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                     message: `Downloaded ${pdfs.length} PDFs and uploaded to AWS successfully`,
                     pdfCount: pdfs.length,
                     uploadCount: uploadResults.length,
-                    awsObjectKeys: uploadResults.map(r => r.pdfObjectKey)
+                    awsObjectKeys: uploadResults.map(r => r.pdfObjectKey),
+                    jsonObjectKeys: uploadResults.length > 0 ? uploadResults[0].jsonObjectKeys : []
                 });
                 
                 console.log(`✅ Processed ${prop.property}: ${pdfs.length} PDFs downloaded, ${uploadResults.length} uploaded to AWS`);
