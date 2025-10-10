@@ -421,13 +421,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     addLogEntry(`✅ Processing completed: ${data.message}`, 'success');
                     
-                    // Update the results with AWS object keys for Button 3
+                    // Update the results with AWS object keys and unitCode for Button 3
                     if (data.properties) {
                         data.properties.forEach(updatedProp => {
                             const originalProp = results.find(r => r.property === updatedProp.property);
                             if (originalProp) {
                                 originalProp.awsObjectKeys = updatedProp.awsObjectKeys || [];
                                 originalProp.jsonObjectKeys = updatedProp.jsonObjectKeys || [];
+                                originalProp.unitCode = updatedProp.unitCode || originalProp.unitCode || '';
                             }
                         });
                     }

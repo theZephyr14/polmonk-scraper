@@ -819,7 +819,8 @@ app.post('/api/process-properties', async (req, res) => {
                     water_cost: waterCost,
                     total_cost: totalCost,
                     overuse_amount: overuseAmount,
-                    rooms: roomCount
+                    rooms: roomCount,
+                    unitCode: property.unitCode || ''
                     };
                     
                     results.push(result);
