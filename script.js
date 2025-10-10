@@ -393,35 +393,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Add export button for HouseMonk testing (TEMPORARY)
-        const exportBtn = document.createElement('button');
-        exportBtn.className = 'submit-btn';
-        exportBtn.style.marginTop = '20px';
-        exportBtn.textContent = '📥 Export Overuse Data for HouseMonk Test';
-        exportBtn.onclick = async () => {
-            try {
-                const response = await fetch('/api/export-test-data', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ results })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    alert(`✅ Exported ${data.count} properties with overuse to test_overuse_data.json\n\nRun: node test_housemonk_integration.js`);
-                } else {
-                    alert(`❌ Export failed: ${data.message}`);
-                }
-            } catch (error) {
-                alert(`❌ Export failed: ${error.message}`);
-            }
-        };
-        resultsList.appendChild(exportBtn);
+        // Button 1 removed - not useful
         
-        // Add PDF download button for overuse properties
+        // Button 2: Download PDFs and Upload to AWS
         const pdfBtn = document.createElement('button');
         pdfBtn.className = 'submit-btn';
         pdfBtn.style.marginTop = '10px';
         pdfBtn.style.backgroundColor = '#28a745';
-        pdfBtn.textContent = '📄 Download PDFs & Upload to AWS';
+        pdfBtn.textContent = '📄 Step 1: Download PDFs & Upload to AWS';
         pdfBtn.onclick = async () => {
             try {
                 addLogEntry('Starting PDF download and AWS upload for overuse properties...', 'info');
@@ -468,21 +447,21 @@ document.addEventListener('DOMContentLoaded', function() {
             } finally {
                 // Re-enable button
                 pdfBtn.disabled = false;
-                pdfBtn.textContent = '📄 Download PDFs & Upload to AWS';
+                pdfBtn.textContent = '📄 Step 1: Download PDFs & Upload to AWS';
             }
         };
         resultsList.appendChild(pdfBtn);
         
-        // Add complete HouseMonk integration button
+        // Button 3: Create HouseMonk Invoices
         const housemonkBtn = document.createElement('button');
         housemonkBtn.className = 'submit-btn';
         housemonkBtn.style.marginTop = '10px';
         housemonkBtn.style.backgroundColor = '#6f42c1';
-        housemonkBtn.textContent = '📝 Create HouseMonk Invoices (Download → Upload → Create)';
+        housemonkBtn.textContent = '📝 Step 2: Create HouseMonk Invoices';
         housemonkBtn.onclick = async () => {
             try {
-                addLogEntry('Starting complete HouseMonk integration...', 'info');
-                addLogEntry('This will: Download PDFs → Upload to AWS → Create Invoices', 'info');
+                addLogEntry('Starting HouseMonk invoice creation...', 'info');
+                addLogEntry('This will: Use AWS links → Create Invoices in HouseMonk', 'info');
                 
                 const response = await fetch('/api/housemonk/process-overuse', {
                     method: 'POST',
