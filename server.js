@@ -1022,52 +1022,63 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
             try {
                 console.log(`Downloading PDFs for ${prop.property}...`);
                 
-                // Skip PDF download for Button 2 - just test AWS upload with mock data
-                console.log(`⚠️ Skipping PDF download for ${prop.property} - testing AWS upload only`);
-                const pdfs = []; // Empty array for now
+                // Use the same browser configuration as the main app
+                const browserWsUrl = process.env.BROWSER_WS_URL || process.env.BROWSERLESS_WS_URL || 'wss://production-sfo.browserless.io?token=2TBdtRaSfCJdCtrf0150e386f6b4e285c10a465d3bcf4caf5';
+                
+                const pdfs = await downloadPdfsForProperty(
+                    prop.property,
+                    prop.selected_bills || [],
+                    browserWsUrl, // Use the same browser config as main app
+                    'francisco@node-living.com',
+                    'Aribau126!'
+                );
                 
                 let uploadResults = [];
                 
-                // Test AWS upload using working logic
-                try {
-                    console.log(`☁️ Testing AWS upload for ${prop.property}...`);
+                // Upload PDFs to AWS if we have any
+                if (pdfs.length > 0) {
+                    try {
+                        console.log(`☁️ Uploading ${pdfs.length} PDFs to HouseMonk AWS...`);
 
-                    // Use working credentials from New try folder
-                    const workingToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI2ODkxZGZiZjA1MmQxZDdmMzM2ZDBkNjIiLCJ0eXBlcyI6WyJhZG1pbiJdLCJpYXQiOjE3NTg1MzUzNjEsImV4cCI6MTc2NjMxMTM2MX0.wGHFL1Gd3cOODn6uHVcV5IbJ2xMZBoCoMmvydet8fRY";
-                    const workingClientId = "1326bbe0-8ed1-11f0-b658-7dd414f87b53";
+                        // Use working credentials from New try folder
+                        const workingToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI2ODkxZGZiZjA1MmQxZDdmMzM2ZDBkNjIiLCJ0eXBlcyI6WyJhZG1pbiJdLCJpYXQiOjE3NTg1MzUzNjEsImV4cCI6MTc2NjMxMTM2MX0.wGHFL1Gd3cOODn6uHVcV5IbJ2xMZBoCoMmvydet8fRY";
+                        const workingClientId = "1326bbe0-8ed1-11f0-b658-7dd414f87b53";
 
-                    // Test with a mock PDF buffer
-                    const mockPdfBuffer = Buffer.from('Mock PDF content for testing AWS upload');
-                    const mockFileName = `${prop.property.replace(/[^A-Za-z0-9_\-]+/g, '_')}_test.pdf`;
-                    
-                    // Get presigned URL
-                    const presignedResponse = await axios.post(
-                        "https://dashboard.thehousemonk.com/api/document/presigned",
-                        { fileName: mockFileName },
-                        { 
-                            headers: { 
-                                authorization: workingToken, 
-                                "x-api-key": workingClientId, 
-                                "content-type": "application/json" 
-                            } 
+                        for (const pdf of pdfs) {
+                            // Get presigned URL
+                            const presignedResponse = await axios.post(
+                                "https://dashboard.thehousemonk.com/api/document/presigned",
+                                { fileName: pdf.fileName },
+                                { 
+                                    headers: { 
+                                        authorization: workingToken, 
+                                        "x-api-key": workingClientId, 
+                                        "content-type": "application/json" 
+                                    } 
+                                }
+                            );
+
+                            // Upload to S3
+                            await axios.put(presignedResponse.data.url, pdf.buffer, { 
+                                headers: { "Content-Type": "application/pdf" } 
+                            });
+
+                            uploadResults.push({
+                                pdfObjectKey: presignedResponse.data.objectKey,
+                                jsonObjectKeys: []
+                            });
+
+                            console.log(`✅ Uploaded PDF: ${pdf.fileName} → ${presignedResponse.data.objectKey}`);
                         }
-                    );
 
-                    // Upload to S3
-                    await axios.put(presignedResponse.data.url, mockPdfBuffer, { 
-                        headers: { "Content-Type": "application/pdf" } 
-                    });
+                        console.log(`✅ Uploaded ${pdfs.length} PDFs to AWS for ${prop.property}`);
 
-                    uploadResults.push({
-                        pdfObjectKey: presignedResponse.data.objectKey,
-                        jsonObjectKeys: []
-                    });
-
-                    console.log(`✅ AWS upload successful for ${prop.property}: ${presignedResponse.data.objectKey}`);
-
-                } catch (uploadError) {
-                    console.error(`❌ AWS upload failed for ${prop.property}:`, uploadError.response?.data?.message || uploadError.message);
-                    // Continue with success status but note upload failure
+                    } catch (uploadError) {
+                        console.error(`❌ AWS upload failed for ${prop.property}:`, uploadError.response?.data?.message || uploadError.message);
+                        // Continue with success status but note upload failure
+                    }
+                } else {
+                    console.log(`⚠️ No PDFs downloaded for ${prop.property}`);
                 }
                 
                 processedProperties.push({
