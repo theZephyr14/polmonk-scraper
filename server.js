@@ -1022,44 +1022,37 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
             try {
                 console.log(`Downloading PDFs for ${prop.property}...`);
                 
-                // Use the same browser configuration as the main app
-                const browserWsUrl = process.env.BROWSER_WS_URL || process.env.BROWSERLESS_WS_URL || 'wss://production-sfo.browserless.io?token=2TBdtRaSfCJdCtrf0150e386f6b4e285c10a465d3bcf4caf5';
-                
-                const pdfs = await downloadPdfsForProperty(
-                    prop.property,
-                    prop.selected_bills || [],
-                    browserWsUrl, // Use the same browser config as main app
-                    'francisco@node-living.com',
-                    'Aribau126!'
-                );
+                // Skip PDF download for Button 2 - just test AWS upload with mock data
+                console.log(`⚠️ Skipping PDF download for ${prop.property} - testing AWS upload only`);
+                const pdfs = []; // Empty array for now
                 
                 let uploadResults = [];
                 
-                // Upload PDFs to AWS if we have any
-                if (pdfs.length > 0) {
-                    try {
-                        // Initialize auth only once
-                        if (!authInitialized) {
-                            console.log('🔐 Initializing HouseMonk authentication...');
-                            await auth.refreshMasterToken();
-                            await auth.getUserAccessToken(auth.config.userId);
-                            authInitialized = true;
-                            console.log('✅ HouseMonk authentication ready');
-                        }
-                        
-                        console.log(`☁️ Uploading ${pdfs.length} PDFs to HouseMonk AWS...`);
-                        
-                        for (const pdf of pdfs) {
-                            const result = await uploadPdfAndMetadata(auth, pdf.buffer, pdf.fileName, prop);
-                            uploadResults.push(result);
-                        }
-                        
-                        console.log(`✅ Uploaded ${pdfs.length} PDFs to AWS for ${prop.property}`);
-                        
-                    } catch (uploadError) {
-                        console.error(`❌ AWS upload failed for ${prop.property}:`, uploadError.message);
-                        // Continue with success status but note upload failure
+                // Test AWS upload (even without PDFs)
+                try {
+                    // Initialize auth only once
+                    if (!authInitialized) {
+                        console.log('🔐 Initializing HouseMonk authentication...');
+                        await auth.refreshMasterToken();
+                        await auth.getUserAccessToken(auth.config.userId);
+                        authInitialized = true;
+                        console.log('✅ HouseMonk authentication ready');
                     }
+
+                    console.log(`☁️ Testing AWS upload for ${prop.property}...`);
+
+                    // Test with a mock PDF buffer
+                    const mockPdfBuffer = Buffer.from('Mock PDF content for testing');
+                    const mockFileName = `${prop.property.replace(/\s+/g, '_')}_test.pdf`;
+                    
+                    const result = await uploadPdfAndMetadata(auth, mockPdfBuffer, mockFileName, prop);
+                    uploadResults.push(result);
+
+                    console.log(`✅ AWS upload test successful for ${prop.property}`);
+
+                } catch (uploadError) {
+                    console.error(`❌ AWS upload failed for ${prop.property}:`, uploadError.message);
+                    // Continue with success status but note upload failure
                 }
                 
                 processedProperties.push({
