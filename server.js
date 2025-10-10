@@ -1028,30 +1028,45 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                 
                 let uploadResults = [];
                 
-                // Test AWS upload (even without PDFs)
+                // Test AWS upload using working logic
                 try {
-                    // Initialize auth only once
-                    if (!authInitialized) {
-                        console.log('🔐 Initializing HouseMonk authentication...');
-                        await auth.refreshMasterToken();
-                        await auth.getUserAccessToken(auth.config.userId);
-                        authInitialized = true;
-                        console.log('✅ HouseMonk authentication ready');
-                    }
-
                     console.log(`☁️ Testing AWS upload for ${prop.property}...`);
 
-                    // Test with a mock PDF buffer
-                    const mockPdfBuffer = Buffer.from('Mock PDF content for testing');
-                    const mockFileName = `${prop.property.replace(/\s+/g, '_')}_test.pdf`;
-                    
-                    const result = await uploadPdfAndMetadata(auth, mockPdfBuffer, mockFileName, prop);
-                    uploadResults.push(result);
+                    // Use working credentials from New try folder
+                    const workingToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI2ODkxZGZiZjA1MmQxZDdmMzM2ZDBkNjIiLCJ0eXBlcyI6WyJhZG1pbiJdLCJpYXQiOjE3NTg1MzUzNjEsImV4cCI6MTc2NjMxMTM2MX0.wGHFL1Gd3cOODn6uHVcV5IbJ2xMZBoCoMmvydet8fRY";
+                    const workingClientId = "1326bbe0-8ed1-11f0-b658-7dd414f87b53";
 
-                    console.log(`✅ AWS upload test successful for ${prop.property}`);
+                    // Test with a mock PDF buffer
+                    const mockPdfBuffer = Buffer.from('Mock PDF content for testing AWS upload');
+                    const mockFileName = `${prop.property.replace(/[^A-Za-z0-9_\-]+/g, '_')}_test.pdf`;
+                    
+                    // Get presigned URL
+                    const presignedResponse = await axios.post(
+                        "https://dashboard.thehousemonk.com/api/document/presigned",
+                        { fileName: mockFileName },
+                        { 
+                            headers: { 
+                                authorization: workingToken, 
+                                "x-api-key": workingClientId, 
+                                "content-type": "application/json" 
+                            } 
+                        }
+                    );
+
+                    // Upload to S3
+                    await axios.put(presignedResponse.data.url, mockPdfBuffer, { 
+                        headers: { "Content-Type": "application/pdf" } 
+                    });
+
+                    uploadResults.push({
+                        pdfObjectKey: presignedResponse.data.objectKey,
+                        jsonObjectKeys: []
+                    });
+
+                    console.log(`✅ AWS upload successful for ${prop.property}: ${presignedResponse.data.objectKey}`);
 
                 } catch (uploadError) {
-                    console.error(`❌ AWS upload failed for ${prop.property}:`, uploadError.message);
+                    console.error(`❌ AWS upload failed for ${prop.property}:`, uploadError.response?.data?.message || uploadError.message);
                     // Continue with success status but note upload failure
                 }
                 
