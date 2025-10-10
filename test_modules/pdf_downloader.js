@@ -1,6 +1,11 @@
 const { chromium } = require('playwright');
 const axios = require('axios');
 
+// Helper function to sanitize filenames
+function sanitize(name) {
+    return String(name || "").replace(/[^A-Za-z0-9_\-]+/g, "_");
+}
+
 // Download PDFs for a specific property from Polaroo
 async function downloadPdfsForProperty(propertyName, selectedBills, browserWsUrl, polarooEmail, polarooPassword) {
     console.log(`📥 Starting PDF download for: ${propertyName}`);
@@ -43,26 +48,60 @@ async function downloadPdfsForProperty(propertyName, selectedBills, browserWsUrl
         await page.keyboard.press('Enter');
         await page.waitForTimeout(3000);
         
-        // Wait for table to load
-        await page.waitForSelector('table tbody tr', { timeout: 10000 });
+        // Wait for search results to load
+        console.log('⏳ Waiting for search results...');
+        await page.waitForSelector('table tr', { timeout: 10000 });
         
-        // Match selected bills and download PDFs
+        // Find download buttons (cloud icons in # column)
+        console.log(`📥 Looking for download buttons (cloud icons)...`);
+        const downloadButtons = page.locator('table tr td:first-child button');
+        const elementCount = await downloadButtons.count();
+        
+        console.log(`📋 Found ${elementCount} download buttons`);
+        
         const pdfs = [];
-        console.log(`📋 Processing ${selectedBills.length} selected bills...`);
         
-        for (const bill of selectedBills) {
+        // Download PDFs by clicking cloud icons (up to 3 PDFs)
+        const maxDownloads = Math.min(elementCount, 3);
+        console.log(`📥 Downloading up to ${maxDownloads} PDFs...`);
+        
+        for (let i = 0; i < maxDownloads; i++) {
             try {
-                const pdfBuffer = await downloadSinglePdf(page, bill);
-                if (pdfBuffer) {
+                console.log(`📥 Downloading PDF ${i + 1}/${maxDownloads}...`);
+                
+                // Set up new page promise for Adobe tab
+                const newPagePromise = page.context().waitForEvent('page', { timeout: 10000 });
+                
+                // Click the cloud icon
+                const element = downloadButtons.nth(i);
+                await element.click();
+                
+                // Wait for new page (Adobe tab) to open
+                const newPage = await newPagePromise;
+                console.log('📄 Adobe tab opened, waiting for PDF to load...');
+                
+                // Wait for PDF to load and get the content
+                await newPage.waitForLoadState('networkidle', { timeout: 15000 });
+                
+                // Get PDF content
+                const pdfBuffer = await newPage.pdf({ format: 'A4' });
+                
+                if (pdfBuffer && pdfBuffer.length > 0) {
+                    const fileName = `${sanitize(propertyName)}_invoice_${Date.now()}.pdf`;
                     pdfs.push({
                         buffer: pdfBuffer,
-                        fileName: `${sanitize(propertyName)}_${sanitize(bill.Service)}_${Date.now()}.pdf`,
-                        billInfo: bill
+                        fileName: fileName
                     });
-                    console.log(`  ✅ Downloaded PDF for ${bill.Service} (${bill['Final Date'] || bill['Final date']})`);
+                    console.log(`✅ Downloaded: ${fileName}`);
+                } else {
+                    console.log(`⚠️ No PDF content received for download ${i + 1}`);
                 }
+                
+                // Close the Adobe tab
+                await newPage.close();
+                
             } catch (error) {
-                console.error(`  ❌ Failed to download PDF for ${bill.Service}:`, error.message);
+                console.log(`⚠️ Failed to download PDF ${i + 1}: ${error.message}`);
             }
         }
         
