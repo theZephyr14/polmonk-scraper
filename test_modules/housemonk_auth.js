@@ -20,15 +20,29 @@ class HouseMonkAuth {
     async refreshMasterToken() {
         try {
             console.log('🔄 Refreshing master token...');
-            const response = await axios.post(`${this.config.baseUrl}/api/client/refresh-token`, {
+            
+            const requestUrl = `${this.config.baseUrl}/api/client/refresh-token`;
+            const requestBody = {
                 clientId: this.config.clientId,
                 clientSecret: this.config.clientSecret
-            });
+            };
+            
+            console.log('📤 Master Token Request:');
+            console.log('  URL:', requestUrl);
+            console.log('  Method: POST');
+            console.log('  Body:', JSON.stringify(requestBody, null, 2));
+            
+            const response = await axios.post(requestUrl, requestBody);
+            
+            console.log('📥 Master Token Response:');
+            console.log('  Status:', response.status);
+            console.log('  Data:', JSON.stringify(response.data, null, 2));
             
             this.masterToken = response.data.token;
             this.tokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
             
             console.log('✅ Master token refreshed successfully');
+            console.log('  Token (first 50 chars):', this.masterToken.substring(0, 50) + '...');
             return this.masterToken;
         } catch (error) {
             console.error('❌ Failed to refresh master token:', error.response?.data?.message || error.message);
@@ -43,18 +57,34 @@ class HouseMonkAuth {
             }
 
             console.log(`🔑 Getting user access token for user: ${userId}`);
-            const response = await axios.post(`${this.config.baseUrl}/integration/glynk/access-token`, {
-                user: userId
-            }, {
-                headers: {
-                    'x-api-key': this.config.clientId,
-                    'Authorization': `Bearer ${this.masterToken}`,
-                    'Content-Type': 'application/json'
-                }
+            
+            const requestUrl = `${this.config.baseUrl}/integration/glynk/access-token`;
+            const requestBody = { user: userId };
+            const requestHeaders = {
+                'x-api-key': this.config.clientId,
+                'Authorization': this.masterToken,
+                'Content-Type': 'application/json'
+            };
+            
+            console.log('📤 API Request Details:');
+            console.log('  URL:', requestUrl);
+            console.log('  Method: POST');
+            console.log('  Headers:', JSON.stringify(requestHeaders, null, 2));
+            console.log('  Body:', JSON.stringify(requestBody, null, 2));
+            console.log('  Master Token (first 50 chars):', this.masterToken.substring(0, 50) + '...');
+            
+            const response = await axios.post(requestUrl, requestBody, {
+                headers: requestHeaders
             });
+            
+            console.log('📥 API Response Details:');
+            console.log('  Status:', response.status);
+            console.log('  Headers:', JSON.stringify(response.headers, null, 2));
+            console.log('  Data:', JSON.stringify(response.data, null, 2));
 
-            this.userToken = response.data.accessToken;
+            this.userToken = response.data[0].accessToken;
             console.log('✅ User access token obtained');
+            console.log('  User Token (first 50 chars):', this.userToken.substring(0, 50) + '...');
             return this.userToken;
         } catch (error) {
             console.error('❌ Failed to get user access token:', error.response?.data?.message || error.message);
@@ -78,21 +108,37 @@ class HouseMonkAuth {
                 }
             }
 
+            const requestUrl = `${this.config.baseUrl}${endpoint}`;
+            const requestHeaders = {
+                'Authorization': useUserToken ? this.userToken : this.masterToken,
+                'x-api-key': this.config.clientId,
+                'Content-Type': 'application/json'
+            };
+            
             const config = {
                 method,
-                url: `${this.config.baseUrl}${endpoint}`,
-                headers: {
-                    'Authorization': useUserToken ? this.userToken : this.masterToken,
-                    'x-api-key': this.config.clientId,
-                    'Content-Type': 'application/json'
-                }
+                url: requestUrl,
+                headers: requestHeaders
             };
 
             if (data) {
                 config.data = data;
             }
+            
+            console.log('📤 Authenticated API Request:');
+            console.log('  URL:', requestUrl);
+            console.log('  Method:', method);
+            console.log('  Headers:', JSON.stringify(requestHeaders, null, 2));
+            console.log('  Body:', data ? JSON.stringify(data, null, 2) : 'None');
+            console.log('  Token Type:', useUserToken ? 'User Token' : 'Master Token');
+            console.log('  Token (first 50 chars):', (useUserToken ? this.userToken : this.masterToken)?.substring(0, 50) + '...');
 
             const response = await axios(config);
+            
+            console.log('📥 Authenticated API Response:');
+            console.log('  Status:', response.status);
+            console.log('  Data (first 500 chars):', JSON.stringify(response.data, null, 2).substring(0, 500) + '...');
+            
             return response;
         } catch (error) {
             if (error.response?.status === 401) {
