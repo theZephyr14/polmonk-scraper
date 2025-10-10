@@ -1174,8 +1174,6 @@ app.post('/api/housemonk/process-overuse', async (req, res) => {
         
         // Import required modules
         const { HouseMonkAuth, HouseMonkIDResolver } = require('./test_modules/housemonk_auth');
-        const { downloadPdfsForProperty } = require('./test_modules/pdf_downloader');
-        const { uploadPdfAndMetadata } = require('./test_modules/aws_uploader');
         const { createInvoiceForOveruse } = require('./test_modules/invoice_creator');
         
         // Initialize HouseMonk authentication
@@ -1197,35 +1195,22 @@ app.post('/api/housemonk/process-overuse', async (req, res) => {
             console.log(`💰 Overuse: ${prop.overuse_amount.toFixed(2)} €`);
             
             try {
-                // Step 1: Download PDFs from Polaroo
-                console.log('📥 Step 1: Downloading PDFs from Polaroo...');
-                const browserWsUrl = process.env.BROWSER_WS_URL || process.env.BROWSERLESS_WS_URL || 'wss://production-sfo.browserless.io?token=2TBdtRaSfCJdCtrf0150e386f6b4e285c10a465d3bcf4caf5';
-                
-                const pdfs = await downloadPdfsForProperty(
-                    prop.property,
-                    prop.selected_bills || [],
-                    browserWsUrl,
-                    process.env.POLAROO_EMAIL || 'francisco@node-living.com',
-                    process.env.POLAROO_PASSWORD || 'Aribau126!'
-                );
-                
-                console.log(`✅ Downloaded ${pdfs.length} PDFs`);
-                
-                // Step 2: Upload PDFs to HouseMonk AWS S3
-                console.log('☁️ Step 2: Uploading to HouseMonk AWS S3...');
-                const uploadResults = [];
-                for (const pdf of pdfs) {
-                    const result = await uploadPdfAndMetadata(auth, pdf.buffer, pdf.fileName, prop);
-                    uploadResults.push(result);
+                // Check if AWS links are available from Button 2
+                if (!prop.awsObjectKeys || prop.awsObjectKeys.length === 0) {
+                    console.log('❌ No AWS links found - please run Button 2 first to upload PDFs');
+                    throw new Error('No AWS links found. Please run "Download PDFs & Upload to AWS" first.');
                 }
                 
-                const pdfObjectKeys = uploadResults.map(r => r.pdfObjectKey);
-                const jsonObjectKeys = uploadResults.flatMap(r => r.jsonObjectKeys);
+                console.log(`📋 Using ${prop.awsObjectKeys.length} AWS links from Button 2`);
                 
-                console.log(`✅ Uploaded ${uploadResults.length} PDFs with metadata`);
+                // Use existing AWS links (no need to download/upload again)
+                const pdfObjectKeys = prop.awsObjectKeys;
+                const jsonObjectKeys = []; // We can add JSON metadata later if needed
                 
-                // Step 3: Create invoice in HouseMonk
-                console.log('📝 Step 3: Creating invoice in HouseMonk...');
+                console.log(`✅ Using existing AWS files: ${pdfObjectKeys.join(', ')}`);
+                
+                // Create invoice in HouseMonk using existing AWS files
+                console.log('📝 Creating invoice in HouseMonk...');
                 const invoice = await createInvoiceForOveruse(
                     auth,
                     resolver,
@@ -1242,7 +1227,7 @@ app.post('/api/housemonk/process-overuse', async (req, res) => {
                     invoiceId: invoice._id,
                     invoiceUrl: `${auth.config.baseUrl}/dashboard/transactions/${invoice._id}`,
                     overuseAmount: prop.overuse_amount,
-                    pdfCount: pdfs.length,
+                    pdfCount: pdfObjectKeys.length,
                     aws: {
                         pdfs: pdfObjectKeys,
                         json: jsonObjectKeys
