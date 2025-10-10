@@ -1018,9 +1018,16 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
         
         const processedProperties = [];
         
-        for (const prop of overuseProperties) {
+        for (let i = 0; i < overuseProperties.length; i++) {
+            const prop = overuseProperties[i];
             try {
-                console.log(`Downloading PDFs for ${prop.property}...`);
+                console.log(`Downloading PDFs for ${prop.property}... (${i + 1}/${overuseProperties.length})`);
+                
+                // Add delay between properties to avoid rate limiting
+                if (i > 0) {
+                    console.log('⏳ Waiting 10 seconds to avoid rate limiting...');
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                }
                 
                 // Use the same browser configuration as the main app
                 const browserWsUrl = process.env.BROWSER_WS_URL || process.env.BROWSERLESS_WS_URL || 'wss://production-sfo.browserless.io?token=2TBdtRaSfCJdCtrf0150e386f6b4e285c10a465d3bcf4caf5';
@@ -1094,7 +1101,13 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                 });
                 
                 console.log(`✅ Processed ${prop.property}: ${pdfs.length} PDFs downloaded, ${uploadResults.length} uploaded to AWS`);
-                
+
+                // Small delay after processing each property
+                if (i < overuseProperties.length - 1) {
+                    console.log('⏳ Brief pause before next property...');
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+
             } catch (error) {
                 console.error(`❌ Failed to process ${prop.property}:`, error.message);
                 processedProperties.push({
