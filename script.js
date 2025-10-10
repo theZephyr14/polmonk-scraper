@@ -421,26 +421,54 @@ document.addEventListener('DOMContentLoaded', function() {
         pdfBtn.className = 'submit-btn';
         pdfBtn.style.marginTop = '10px';
         pdfBtn.style.backgroundColor = '#28a745';
-        pdfBtn.textContent = '📄 Download PDFs for Overuse Properties';
+        pdfBtn.textContent = '📄 Download PDFs & Upload to AWS';
         pdfBtn.onclick = async () => {
             try {
-                addLogEntry('Starting PDF download for overuse properties...', 'info');
+                addLogEntry('Starting PDF download and AWS upload for overuse properties...', 'info');
+                addLogEntry('This may take 2-3 minutes per property...', 'info');
+                
+                // Disable button during processing
+                pdfBtn.disabled = true;
+                pdfBtn.textContent = '⏳ Processing...';
+                
                 const response = await fetch('/api/process-overuse-pdfs', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ results })
                 });
+                
                 const data = await response.json();
+                
                 if (data.success) {
-                    addLogEntry(`✅ PDF download completed: ${data.message}`, 'success');
-                    alert(`✅ PDF download completed!\n\n${data.message}`);
+                    addLogEntry(`✅ Processing completed: ${data.message}`, 'success');
+                    
+                    // Show detailed results
+                    let resultMessage = `✅ Processing completed!\n\n${data.message}\n\n`;
+                    if (data.properties) {
+                        resultMessage += 'Details:\n';
+                        data.properties.forEach(prop => {
+                            resultMessage += `• ${prop.property}: ${prop.status.toUpperCase()}\n`;
+                            if (prop.status === 'success') {
+                                resultMessage += `  - Downloaded: ${prop.pdfCount} PDFs\n`;
+                                resultMessage += `  - Uploaded to AWS: ${prop.uploadCount || 0} files\n`;
+                            } else {
+                                resultMessage += `  - Error: ${prop.message}\n`;
+                            }
+                        });
+                    }
+                    
+                    alert(resultMessage);
                 } else {
-                    addLogEntry(`❌ PDF download failed: ${data.message}`, 'error');
-                    alert(`❌ PDF download failed: ${data.message}`);
+                    addLogEntry(`❌ Processing failed: ${data.message}`, 'error');
+                    alert(`❌ Processing failed: ${data.message}`);
                 }
             } catch (error) {
-                addLogEntry(`❌ PDF download failed: ${error.message}`, 'error');
-                alert(`❌ PDF download failed: ${error.message}`);
+                addLogEntry(`❌ Processing failed: ${error.message}`, 'error');
+                alert(`❌ Processing failed: ${error.message}`);
+            } finally {
+                // Re-enable button
+                pdfBtn.disabled = false;
+                pdfBtn.textContent = '📄 Download PDFs & Upload to AWS';
             }
         };
         resultsList.appendChild(pdfBtn);

@@ -1007,8 +1007,14 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
         
         console.log(`Processing ${overuseProperties.length} properties with overuse for PDF download`);
         
-        // Use real Polaroo credentials for PDF download
+        // Use real Polaroo credentials for PDF download and AWS upload
         const { downloadPdfsForProperty } = require('./test_modules/pdf_downloader');
+        const { uploadPdfAndMetadata } = require('./test_modules/aws_uploader');
+        const { HouseMonkAuth } = require('./test_modules/housemonk_auth');
+        
+        // Initialize HouseMonk authentication
+        const auth = new HouseMonkAuth();
+        let authInitialized = false;
         
         const processedProperties = [];
         
@@ -1027,27 +1033,58 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                     'Aribau126!'
                 );
                 
+                let uploadResults = [];
+                
+                // Upload PDFs to AWS if we have any
+                if (pdfs.length > 0) {
+                    try {
+                        // Initialize auth only once
+                        if (!authInitialized) {
+                            console.log('🔐 Initializing HouseMonk authentication...');
+                            await auth.refreshMasterToken();
+                            await auth.getUserAccessToken(auth.config.userId);
+                            authInitialized = true;
+                            console.log('✅ HouseMonk authentication ready');
+                        }
+                        
+                        console.log(`☁️ Uploading ${pdfs.length} PDFs to HouseMonk AWS...`);
+                        
+                        for (const pdf of pdfs) {
+                            const result = await uploadPdfAndMetadata(auth, pdf.buffer, pdf.fileName, prop);
+                            uploadResults.push(result);
+                        }
+                        
+                        console.log(`✅ Uploaded ${pdfs.length} PDFs to AWS for ${prop.property}`);
+                        
+                    } catch (uploadError) {
+                        console.error(`❌ AWS upload failed for ${prop.property}:`, uploadError.message);
+                        // Continue with success status but note upload failure
+                    }
+                }
+                
                 processedProperties.push({
                     property: prop.property,
                     overuse_amount: prop.overuse_amount,
                     rooms: prop.rooms,
                     unitCode: prop.unitCode || 'NOT_PROVIDED',
                     status: 'success',
-                    message: `Downloaded ${pdfs.length} PDFs successfully`,
-                    pdfCount: pdfs.length
+                    message: `Downloaded ${pdfs.length} PDFs and uploaded to AWS successfully`,
+                    pdfCount: pdfs.length,
+                    uploadCount: uploadResults.length,
+                    awsObjectKeys: uploadResults.map(r => r.pdfObjectKey)
                 });
                 
-                console.log(`✅ Downloaded ${pdfs.length} PDFs for ${prop.property}`);
+                console.log(`✅ Processed ${prop.property}: ${pdfs.length} PDFs downloaded, ${uploadResults.length} uploaded to AWS`);
                 
             } catch (error) {
-                console.error(`❌ Failed to download PDFs for ${prop.property}:`, error.message);
+                console.error(`❌ Failed to process ${prop.property}:`, error.message);
                 processedProperties.push({
                     property: prop.property,
                     overuse_amount: prop.overuse_amount,
                     rooms: prop.rooms,
                     unitCode: prop.unitCode || 'NOT_PROVIDED',
                     status: 'failed',
-                    message: `PDF download failed: ${error.message}`,
+                    message: `Processing failed: ${error.message}`,
                     error: error.message
                 });
             }

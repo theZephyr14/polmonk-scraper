@@ -48,8 +48,8 @@ class HouseMonkAuth {
             }, {
                 headers: {
                     'x-api-key': this.config.clientId,
-                    'authorization': `Bearer ${this.masterToken}`,
-                    'content-type': 'application/json'
+                    'Authorization': `Bearer ${this.masterToken}`,
+                    'Content-Type': 'application/json'
                 }
             });
 
@@ -82,9 +82,9 @@ class HouseMonkAuth {
                 method,
                 url: `${this.config.baseUrl}${endpoint}`,
                 headers: {
-                    'authorization': useUserToken ? this.userToken : this.masterToken,
+                    'Authorization': useUserToken ? this.userToken : this.masterToken,
                     'x-api-key': this.config.clientId,
-                    'content-type': 'application/json'
+                    'Content-Type': 'application/json'
                 }
             };
 
