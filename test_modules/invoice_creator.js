@@ -70,7 +70,7 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfObjectKe
         console.log(`    📋 Invoice payload prepared (${propertyData.overuse_amount.toFixed(2)}€, ${pdfObjectKeys.length} PDFs)`);
         
         // 4. Create invoice via API
-        const response = await auth.makeAuthenticatedRequest('POST', '/api/transaction', payload);
+        const response = await auth.makeAuthenticatedRequest('POST', '/api/transaction', payload, true);
         
         console.log(`    ✅ Invoice created: ${response.data._id}`);
         return response.data;

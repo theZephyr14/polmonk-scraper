@@ -179,7 +179,7 @@ class HouseMonkIDResolver {
         
         try {
             // Get home details
-            const homeResponse = await this.auth.makeAuthenticatedRequest('GET', `/api/home/${unitCode}`);
+            const homeResponse = await this.auth.makeAuthenticatedRequest('GET', `/api/home/${unitCode}`, null, true);
             const home = homeResponse.data;
             
             const result = {
@@ -205,7 +205,7 @@ class HouseMonkIDResolver {
         console.log(`📦 Fetching products for project: ${projectId}`);
         
         try {
-            const response = await this.auth.makeAuthenticatedRequest('GET', `/api/product-and-service?projects=${projectId}`);
+            const response = await this.auth.makeAuthenticatedRequest('GET', `/api/product-and-service?projects=${projectId}`, null, true);
             const products = response.data.rows || [];
             
             console.log(`✅ Found ${products.length} products`);
@@ -220,7 +220,7 @@ class HouseMonkIDResolver {
         console.log(`💰 Fetching tax codes for project: ${projectId}`);
         
         try {
-            const response = await this.auth.makeAuthenticatedRequest('GET', `/api/tax?projects=${projectId}`);
+            const response = await this.auth.makeAuthenticatedRequest('GET', `/api/tax?projects=${projectId}`, null, true);
             const taxCodes = response.data.rows || [];
             
             console.log(`✅ Found ${taxCodes.length} tax codes`);
@@ -235,7 +235,7 @@ class HouseMonkIDResolver {
         console.log('📋 Fetching all available units...');
         
         try {
-            const response = await this.auth.makeAuthenticatedRequest('GET', '/api/home');
+            const response = await this.auth.makeAuthenticatedRequest('GET', '/api/home', null, true);
             const units = response.data.rows || [];
             
             console.log(`✅ Found ${units.length} units`);
