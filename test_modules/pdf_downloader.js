@@ -277,5 +277,5 @@ function sanitize(name) {
     return String(name || '').replace(/[^A-Za-z0-9_-]+/g, '_');
 }
 
-module.exports = { downloadPdfsForProperty, downloadPdfsForPropertyWithContext };
+module.exports = { downloadPdfsForProperty, downloadPdfsForPropertyWithContext, loginToPolaroo };
 

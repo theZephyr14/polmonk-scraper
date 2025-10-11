@@ -1104,6 +1104,9 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
         const { uploadPdfAndMetadata } = require('./test_modules/aws_uploader');
         const { HouseMonkAuth } = require('./test_modules/housemonk_auth');
         
+        // Import loginToPolaroo function
+        const { loginToPolaroo } = require('./test_modules/pdf_downloader');
+        
         // Initialize HouseMonk authentication
         const auth = new HouseMonkAuth();
         let authInitialized = false;
