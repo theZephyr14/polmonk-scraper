@@ -651,7 +651,64 @@ app.post('/api/process-properties', async (req, res) => {
         }
         
         try {
-            // Process each property using the shared browser session
+            // Login to Polaroo ONCE at the start (reuse for all properties)
+            let loginPage = await context.newPage();
+            try {
+                await withRetry(async (attempt) => {
+                    logs.push({ message: `🔑 Logging into Polaroo... (attempt ${attempt})`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: `🔑 Logging into Polaroo... (attempt ${attempt})` });
+                        
+                    // Quick egress probe
+                    await probeUrl('https://www.google.com', 'egress');
+                    await probeUrl('https://app.polaroo.com', 'polaroo host');
+                        
+                        // Navigate to login page
+                    await navigateWithWatchdog(loginPage, 'https://app.polaroo.com/login', 'login page');
+                    await waitCloudflareIfPresent(loginPage, 60000);
+                    await debugLoginDom(loginPage);
+                    await maybeRevealEmailLogin(loginPage).catch(()=>{});
+                    await sleep(WAIT_MS);
+                    await debugLoginDom(loginPage);
+
+                    // Handle cookie/consent banners if present
+                    try {
+                        const consentBtn = loginPage.getByRole('button', { name: /accept|agree|got it|aceptar|consent/i });
+                        if (await consentBtn.count()) {
+                            await consentBtn.first().click({ timeout: 2000 }).catch(() => {});
+                        }
+                    } catch (_) {}
+
+                    if (!loginPage.url().includes('dashboard')) {
+                        logs.push({ message: '📝 Filling login credentials...', level: 'info' });
+                        const ok = await safeFillAndSubmit(loginPage, email, password);
+                        if (!ok) throw new Error('Login inputs not found');
+                    }
+
+                        // Wait for dashboard
+                    logs.push({ message: '⏳ Waiting for dashboard redirect...', level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: '⏳ Waiting for dashboard redirect...' });
+                    const ok = await waitForUrlContains(loginPage, 'dashboard', 30000);
+                    if (!ok) {
+                        logs.push({ message: '↪️ Forcing navigation to /dashboard', level: 'warning' });
+                        sendEvent({ type: 'log', level: 'warning', message: '↪️ Forcing navigation to /dashboard' });
+                        await loginPage.goto('https://app.polaroo.com/dashboard', { timeout: 60000, waitUntil: 'networkidle' }).catch(()=>{});
+                        await loginPage.waitForLoadState('networkidle').catch(()=>{});
+                    }
+                    if (!loginPage.url().includes('dashboard')) throw new Error('No dashboard after login');
+                    logs.push({ message: '✅ Successfully logged into Polaroo!', level: 'success' });
+                    sendEvent({ type: 'log', level: 'success', message: '✅ Successfully logged into Polaroo!' });
+                }, 3, 1000, 'login');
+                
+                // Close login page - we'll reuse the context's cookies
+                await loginPage.close();
+                logs.push({ message: '🍪 Login session established - will reuse for all properties', level: 'success' });
+                sendEvent({ type: 'log', level: 'success', message: '🍪 Login session established - will reuse for all properties' });
+            } catch (error) {
+                await loginPage.close();
+                throw error;
+            }
+            
+            // Process each property using the shared browser session (no re-login needed)
             for (let i = 0; i < properties.length; i++) {
                 if (effectiveLimit && i >= effectiveLimit) break;
                 
@@ -674,7 +731,7 @@ app.post('/api/process-properties', async (req, res) => {
                 let page;
                 
                 try {
-                    // Create new page for this property (reuse browser/context)
+                    // Create new page for this property (reuse browser/context with existing login)
                     page = await context.newPage();
                     
                     // Configure page
@@ -687,52 +744,6 @@ app.post('/api/process-properties', async (req, res) => {
                     await page.setViewportSize?.({ width: 1366, height: 768 });
                     page.setDefaultTimeout(15000);
                     page.setDefaultNavigationTimeout(30000);
-                
-                // Login to Polaroo
-            await withRetry(async (attempt) => {
-                logs.push({ message: `🔑 Logging into Polaroo... (attempt ${attempt})`, level: 'info' });
-                sendEvent({ type: 'log', level: 'info', message: `🔑 Logging into Polaroo... (attempt ${attempt})` });
-                    
-                // Quick egress probe
-                await probeUrl('https://www.google.com', 'egress');
-                await probeUrl('https://app.polaroo.com', 'polaroo host');
-                    
-                    // Navigate to login page
-                await navigateWithWatchdog(page, 'https://app.polaroo.com/login', 'login page');
-                await waitCloudflareIfPresent(page, 60000);
-                await debugLoginDom(page);
-                await maybeRevealEmailLogin(page).catch(()=>{});
-                await sleep(WAIT_MS);
-                await debugLoginDom(page);
-
-                // Handle cookie/consent banners if present
-                try {
-                    const consentBtn = page.getByRole('button', { name: /accept|agree|got it|aceptar|consent/i });
-                    if (await consentBtn.count()) {
-                        await consentBtn.first().click({ timeout: 2000 }).catch(() => {});
-                    }
-                } catch (_) {}
-
-                if (!page.url().includes('dashboard')) {
-                    logs.push({ message: '📝 Filling login credentials...', level: 'info' });
-                    const ok = await safeFillAndSubmit(page, email, password);
-                    if (!ok) throw new Error('Login inputs not found');
-                }
-
-                    // Wait for dashboard
-                logs.push({ message: '⏳ Waiting for dashboard redirect...', level: 'info' });
-                sendEvent({ type: 'log', level: 'info', message: '⏳ Waiting for dashboard redirect...' });
-                const ok = await waitForUrlContains(page, 'dashboard', 30000);
-                if (!ok) {
-                    logs.push({ message: '↪️ Forcing navigation to /dashboard', level: 'warning' });
-                    sendEvent({ type: 'log', level: 'warning', message: '↪️ Forcing navigation to /dashboard' });
-                    await page.goto('https://app.polaroo.com/dashboard', { timeout: 60000, waitUntil: 'networkidle' }).catch(()=>{});
-                    await page.waitForLoadState('networkidle').catch(()=>{});
-                }
-                if (!page.url().includes('dashboard')) throw new Error('No dashboard after login');
-                logs.push({ message: '✅ Successfully logged into Polaroo!', level: 'success' });
-                sendEvent({ type: 'log', level: 'success', message: '✅ Successfully logged into Polaroo!' });
-            }, 3, 1000, 'login');
             
                     // Navigate to accounting dashboard
                     logs.push({ message: `🔍 Navigating to accounting dashboard...`, level: 'info' });
@@ -1117,6 +1128,19 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
         const processedProperties = [];
         
         try {
+            // Login to Polaroo ONCE at the start for PDF downloads (reuse for all properties)
+            let loginPage = await context.newPage();
+            try {
+                console.log('🔑 Logging into Polaroo for PDF downloads...');
+                await loginToPolaroo(loginPage, 'francisco@node-living.com', 'Aribau126!');
+                console.log('✅ Login established for PDF downloads - will reuse for all properties');
+            } catch (error) {
+                console.error('❌ Failed to login for PDF downloads:', error);
+                throw error;
+            } finally {
+                await loginPage.close();
+            }
+            
             for (let i = 0; i < overuseProperties.length; i++) {
                 const prop = overuseProperties[i];
                 try {
@@ -1131,7 +1155,7 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                     const pdfs = await downloadPdfsForPropertyWithContext(
                         prop.property,
                         prop.selected_bills || [],
-                        context, // Reuse shared context
+                        context, // Reuse shared context with existing login
                         'francisco@node-living.com',
                         'Aribau126!'
                     );

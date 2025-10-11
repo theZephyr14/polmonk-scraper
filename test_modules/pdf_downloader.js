@@ -6,15 +6,14 @@ function sanitize(name) {
     return String(name || "").replace(/[^A-Za-z0-9_\-]+/g, "_");
 }
 
-// Download PDFs for a specific property from Polaroo (reuses existing browser/context)
+// Download PDFs for a specific property from Polaroo (reuses existing browser/context and login)
 async function downloadPdfsForPropertyWithContext(propertyName, selectedBills, context, polarooEmail, polarooPassword) {
     console.log(`📥 Starting PDF download for: ${propertyName}`);
     
     const page = await context.newPage();
     
     try {
-        // Login to Polaroo
-        await loginToPolaroo(page, polarooEmail, polarooPassword);
+        // No need to login - context already has login session from main processing
         
         // Navigate to accounting dashboard
         console.log('🌐 Navigating to accounting dashboard...');
