@@ -632,34 +632,61 @@ app.post('/api/process-properties', async (req, res) => {
         
         const results = [];
         const logs = [];
-        // Process each property with its own browser session
-        for (let i = 0; i < properties.length; i++) {
-            if (effectiveLimit && i >= effectiveLimit) break;
-            
-            // Add delay BEFORE processing each property (except first)
-            if (i > 0) {
-                await sleep(25000 + Math.random() * 10000); // 25-35s random delay
-            }
-            
-            const property = properties[i];
-            const propertyName = property.name || property; // Handle both old and new format
-            const roomCount = property.rooms || 0;
-            
-            // Update progress bar
-            const progressPercentage = Math.round(((i + 1) / totalToProcess) * 100);
-            sendEvent({ type: 'progress', percentage: progressPercentage });
-            
-            logs.push({ message: `🏠 Processing property ${i + 1}/${totalToProcess}: ${propertyName} (${roomCount} rooms)`, level: 'info' });
-            sendEvent({ type: 'log', level: 'info', message: `🏠 Processing property ${i + 1}/${totalToProcess}: ${propertyName}` });
-            
-            let browser, context, page;
-            
-            try {
-                // Create new browser session for this property (no backoff)
-                const session = await createBrowserSession();
-                browser = session.browser;
-                context = session.context;
-                page = session.page;
+        
+        // Create ONE browser session for all properties (optimized for paid Browserless)
+        let browser, context;
+        try {
+            console.log('🟡 Creating shared browser session for all properties...');
+            const session = await createBrowserSession();
+            browser = session.browser;
+            context = session.context;
+            console.log('✅ Shared browser session created successfully');
+        } catch (error) {
+            console.error('❌ Failed to create shared browser session:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to create browser session',
+                error: error.message
+            });
+        }
+        
+        try {
+            // Process each property using the shared browser session
+            for (let i = 0; i < properties.length; i++) {
+                if (effectiveLimit && i >= effectiveLimit) break;
+                
+                // Add delay BEFORE processing each property (except first)
+                if (i > 0) {
+                    await sleep(25000 + Math.random() * 10000); // 25-35s random delay
+                }
+                
+                const property = properties[i];
+                const propertyName = property.name || property; // Handle both old and new format
+                const roomCount = property.rooms || 0;
+                
+                // Update progress bar
+                const progressPercentage = Math.round(((i + 1) / totalToProcess) * 100);
+                sendEvent({ type: 'progress', percentage: progressPercentage });
+                
+                logs.push({ message: `🏠 Processing property ${i + 1}/${totalToProcess}: ${propertyName} (${roomCount} rooms)`, level: 'info' });
+                sendEvent({ type: 'log', level: 'info', message: `🏠 Processing property ${i + 1}/${totalToProcess}: ${propertyName}` });
+                
+                let page;
+                
+                try {
+                    // Create new page for this property (reuse browser/context)
+                    page = await context.newPage();
+                    
+                    // Configure page
+                    await page.addInitScript(() => {
+                        Object.defineProperty(navigator, 'webdriver', { get: () => false });
+                        Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+                        Object.defineProperty(navigator, 'plugins', { get: () => [1,2,3,4,5] });
+                        window.chrome = { runtime: {} };
+                    });
+                    await page.setViewportSize?.({ width: 1366, height: 768 });
+                    page.setDefaultTimeout(15000);
+                    page.setDefaultNavigationTimeout(30000);
                 
                 // Login to Polaroo
             await withRetry(async (attempt) => {
@@ -839,12 +866,21 @@ app.post('/api/process-properties', async (req, res) => {
                     results.push(result);
                     logs.push({ message: `❌ Failed to process ${propertyName}: ${error.message}`, level: 'error' });
                     sendEvent({ type: 'log', level: 'error', message: `❌ Failed: ${propertyName} - ${error.message}` });
-            } finally {
-                // Cleanup browser session for this property
-                await cleanupBrowserSession(browser, context);
+                } finally {
+                    // Close page after each property (but keep browser/context alive)
+                    if (page) {
+                        try {
+                            await page.close();
+                        } catch (closeError) {
+                            console.log(`⚠️ Warning: Failed to close page for ${propertyName}:`, closeError.message);
+                        }
+                    }
+                }
             }
-            
-            // Delay moved to BEFORE each property connection (except first)
+        } finally {
+            // Cleanup shared browser session only at the end
+            console.log('🧹 Cleaning up shared browser session...');
+            await cleanupBrowserSession(browser, context);
         }
         
         logs.push({ message: '🎉 Processing completed!', level: 'success' });
@@ -1053,7 +1089,7 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
         console.log(`Processing ${overuseProperties.length} properties with overuse for PDF download`);
         
         // Use real Polaroo credentials for PDF download and AWS upload
-        const { downloadPdfsForProperty } = require('./test_modules/pdf_downloader');
+        const { downloadPdfsForPropertyWithContext } = require('./test_modules/pdf_downloader');
         const { uploadPdfAndMetadata } = require('./test_modules/aws_uploader');
         const { HouseMonkAuth } = require('./test_modules/housemonk_auth');
         
@@ -1061,29 +1097,44 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
         const auth = new HouseMonkAuth();
         let authInitialized = false;
         
+        // Create shared browser session for PDF downloads (optimized for paid Browserless)
+        let browser, context;
+        try {
+            console.log('🟡 Creating shared browser session for PDF downloads...');
+            const session = await createBrowserSession();
+            browser = session.browser;
+            context = session.context;
+            console.log('✅ Shared browser session created successfully');
+        } catch (error) {
+            console.error('❌ Failed to create shared browser session for PDFs:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to create browser session for PDF downloads',
+                error: error.message
+            });
+        }
+        
         const processedProperties = [];
         
-        for (let i = 0; i < overuseProperties.length; i++) {
-            const prop = overuseProperties[i];
-            try {
-                console.log(`Downloading PDFs for ${prop.property}... (${i + 1}/${overuseProperties.length})`);
-                
-                // Add delay between properties to avoid rate limiting
-                if (i > 0) {
-                    console.log('⏳ Waiting 10 seconds to avoid rate limiting...');
-                    await new Promise(resolve => setTimeout(resolve, 10000));
-                }
-                
-                // Use the same browser configuration as the main app
-                const browserWsUrl = process.env.BROWSER_WS_URL || process.env.BROWSERLESS_WS_URL || 'wss://production-sfo.browserless.io?token=2TBdtRaSfCJdCtrf0150e386f6b4e285c10a465d3bcf4caf5';
-                
-                const pdfs = await downloadPdfsForProperty(
-                    prop.property,
-                    prop.selected_bills || [],
-                    browserWsUrl, // Use the same browser config as main app
-                    'francisco@node-living.com',
-                    'Aribau126!'
-                );
+        try {
+            for (let i = 0; i < overuseProperties.length; i++) {
+                const prop = overuseProperties[i];
+                try {
+                    console.log(`Downloading PDFs for ${prop.property}... (${i + 1}/${overuseProperties.length})`);
+                    
+                    // Add delay between properties to avoid rate limiting
+                    if (i > 0) {
+                        console.log('⏳ Waiting 10 seconds to avoid rate limiting...');
+                        await new Promise(resolve => setTimeout(resolve, 10000));
+                    }
+                    
+                    const pdfs = await downloadPdfsForPropertyWithContext(
+                        prop.property,
+                        prop.selected_bills || [],
+                        context, // Reuse shared context
+                        'francisco@node-living.com',
+                        'Aribau126!'
+                    );
                 
                 let uploadResults = [];
                 
@@ -1200,6 +1251,10 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                     error: error.message
                 });
             }
+        } finally {
+            // Cleanup shared browser session only at the end
+            console.log('🧹 Cleaning up shared browser session for PDF downloads...');
+            await cleanupBrowserSession(browser, context);
         }
         
         const successCount = processedProperties.filter(p => p.status === 'success').length;

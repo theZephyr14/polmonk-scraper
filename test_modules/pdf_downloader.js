@@ -6,30 +6,10 @@ function sanitize(name) {
     return String(name || "").replace(/[^A-Za-z0-9_\-]+/g, "_");
 }
 
-// Download PDFs for a specific property from Polaroo
-async function downloadPdfsForProperty(propertyName, selectedBills, browserWsUrl, polarooEmail, polarooPassword) {
+// Download PDFs for a specific property from Polaroo (reuses existing browser/context)
+async function downloadPdfsForPropertyWithContext(propertyName, selectedBills, context, polarooEmail, polarooPassword) {
     console.log(`📥 Starting PDF download for: ${propertyName}`);
     
-    // Connect to browser (local or remote)
-    let browser;
-    if (browserWsUrl) {
-        // Use remote Browserless
-        console.log('🌐 Connecting to remote browser...');
-        browser = await chromium.connectOverCDP(browserWsUrl);
-    } else {
-        // Use local browser
-        console.log('🖥️ Using local browser...');
-        browser = await chromium.launch({ 
-            headless: true,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-blink-features=AutomationControlled'
-            ]
-        });
-    }
-    const context = await browser.newContext();
     const page = await context.newPage();
     
     try {
@@ -106,6 +86,39 @@ async function downloadPdfsForProperty(propertyName, selectedBills, browserWsUrl
         }
         
         return pdfs;
+    } finally {
+        // Close only the page, not the context
+        await page.close();
+    }
+}
+
+// Download PDFs for a specific property from Polaroo (creates new browser session)
+async function downloadPdfsForProperty(propertyName, selectedBills, browserWsUrl, polarooEmail, polarooPassword) {
+    console.log(`📥 Starting PDF download for: ${propertyName}`);
+    
+    // Connect to browser (local or remote)
+    let browser;
+    if (browserWsUrl) {
+        // Use remote Browserless
+        console.log('🌐 Connecting to remote browser...');
+        browser = await chromium.connectOverCDP(browserWsUrl);
+    } else {
+        // Use local browser
+        console.log('🖥️ Using local browser...');
+        browser = await chromium.launch({ 
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-blink-features=AutomationControlled'
+            ]
+        });
+    }
+    const context = await browser.newContext();
+    
+    try {
+        return await downloadPdfsForPropertyWithContext(propertyName, selectedBills, context, polarooEmail, polarooPassword);
     } finally {
         await context.close();
         await browser.close();
@@ -265,5 +278,5 @@ function sanitize(name) {
     return String(name || '').replace(/[^A-Za-z0-9_-]+/g, '_');
 }
 
-module.exports = { downloadPdfsForProperty };
+module.exports = { downloadPdfsForProperty, downloadPdfsForPropertyWithContext };
 
