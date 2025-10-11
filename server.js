@@ -1251,6 +1251,7 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                     error: error.message
                 });
             }
+            }
         } finally {
             // Cleanup shared browser session only at the end
             console.log('🧹 Cleaning up shared browser session for PDF downloads...');
