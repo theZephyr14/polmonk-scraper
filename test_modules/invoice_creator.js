@@ -41,7 +41,7 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfObjectKe
             project: unitDetails.projectId,
             listing: unitDetails.listingId,
             source: 'api_external',
-            status: 'pending', // Changed from 'draft' to 'pending' to prevent auto-deletion
+            status: 'draft', // Use valid HouseMonk status
             dueDate,
             invoiceDate: today,
             taxable: true,
