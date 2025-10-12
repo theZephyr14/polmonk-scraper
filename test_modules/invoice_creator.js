@@ -34,8 +34,8 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfObjectKe
         const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         
         const payload = {
-            users: [unitDetails.tenantId],
-            type: 'Utilities', // Fixed: Changed from 'Invoice' to 'Utilities'
+            users: unitDetails.tenantId ? [unitDetails.tenantId] : [],
+            type: 'Invoice', // Fixed: Use valid HouseMonk transaction type
             transactionBelongsTo: 'Home',
             home: unitDetails.homeId,
             project: unitDetails.projectId,
@@ -54,6 +54,9 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfObjectKe
             organization: unitDetails.organizationId || unitDetails.projectId, // Use project as fallback
             createdBy: auth.config.userId, // Add creator
             updatedBy: auth.config.userId, // Add updater
+            // Add more required fields for invoice
+            invoiceNumber: `INV-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+            reference: `Utilities-${propertyData.property.replace(/\s+/g, '-')}`,
             itemDetails: [{
                 amount: propertyData.overuse_amount,
                 taxable: true,
