@@ -35,18 +35,25 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfObjectKe
         
         const payload = {
             users: [unitDetails.tenantId],
-            type: 'Invoice',
+            type: 'Utilities', // Fixed: Changed from 'Invoice' to 'Utilities'
             transactionBelongsTo: 'Home',
             home: unitDetails.homeId,
             project: unitDetails.projectId,
             listing: unitDetails.listingId,
             source: 'api_external',
-            status: 'draft',
+            status: 'pending', // Changed from 'draft' to 'pending' to prevent auto-deletion
             dueDate,
             invoiceDate: today,
             taxable: true,
             totalAmount: propertyData.overuse_amount,
             openingBalance: propertyData.overuse_amount,
+            // Add required fields that might be missing
+            currency: 'EUR',
+            paymentTerms: '30',
+            // Additional fields that might be required
+            organization: unitDetails.organizationId || unitDetails.projectId, // Use project as fallback
+            createdBy: auth.config.userId, // Add creator
+            updatedBy: auth.config.userId, // Add updater
             itemDetails: [{
                 amount: propertyData.overuse_amount,
                 taxable: true,
@@ -63,16 +70,42 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfObjectKe
                 unit: 'unit',
                 taxCode: taxCode._id
             }],
-            documents: pdfObjectKeys.map(key => ({ objectKey: key, status: 'active' })),
+            // Fixed: Use the correct document structure based on HouseMonk API docs
+            // The files should be an array of document objects with the structure from the presigned URL response
+            files: [
+                ...pdfObjectKeys.map(key => ({ 
+                    objectKey: key, 
+                    status: 'active',
+                    fileName: `utility_bill_${propertyData.property.replace(/\s+/g, '_')}.pdf`,
+                    fileFormat: 'application/pdf'
+                })),
+                ...(jsonObjectKeys && jsonObjectKeys.length > 0 ? jsonObjectKeys.map(key => ({
+                    objectKey: key,
+                    status: 'active',
+                    fileName: `metadata_${propertyData.property.replace(/\s+/g, '_')}.json`,
+                    fileFormat: 'application/json'
+                })) : [])
+            ],
             notes: `Generated from Polaroo overuse analysis for ${propertyData.property}. Electricity bills: ${propertyData.electricity_bills_count || 0}, Water bills: ${propertyData.water_bills_count || 0}. Total overuse: ${propertyData.overuse_amount.toFixed(2)}€`
         };
         
         console.log(`    📋 Invoice payload prepared (${propertyData.overuse_amount.toFixed(2)}€, ${pdfObjectKeys.length} PDFs)`);
+        console.log(`    📋 Full payload:`, JSON.stringify(payload, null, 2));
         
         // 4. Create invoice via API
         const response = await auth.makeAuthenticatedRequest('POST', '/api/transaction', payload, true);
         
         console.log(`    ✅ Invoice created: ${response.data._id}`);
+        console.log(`    📋 Invoice response:`, JSON.stringify(response.data, null, 2));
+        
+        // 5. Verify invoice was created properly by fetching it
+        try {
+            const verifyResponse = await auth.makeAuthenticatedRequest('GET', `/api/transaction/${response.data._id}`, null, true);
+            console.log(`    ✅ Invoice verification:`, JSON.stringify(verifyResponse.data, null, 2));
+        } catch (verifyError) {
+            console.log(`    ⚠️ Could not verify invoice:`, verifyError.message);
+        }
+        
         return response.data;
         
     } catch (error) {
