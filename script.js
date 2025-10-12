@@ -423,14 +423,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Update the results with AWS object keys and unitCode for Button 3
                     if (data.properties) {
+                        console.log('🔄 Updating results with AWS data from Button 2...');
+                        console.log('📋 Button 2 response properties:', data.properties.map(p => ({ 
+                            property: p.property, 
+                            awsObjectKeys: p.awsObjectKeys?.length || 0,
+                            jsonObjectKeys: p.jsonObjectKeys?.length || 0
+                        })));
+                        console.log('📋 Current results before update:', results.map(r => ({ 
+                            property: r.property, 
+                            awsObjectKeys: r.awsObjectKeys?.length || 0,
+                            jsonObjectKeys: r.jsonObjectKeys?.length || 0
+                        })));
+                        
                         data.properties.forEach(updatedProp => {
                             const originalProp = results.find(r => r.property === updatedProp.property);
                             if (originalProp) {
                                 originalProp.awsObjectKeys = updatedProp.awsObjectKeys || [];
                                 originalProp.jsonObjectKeys = updatedProp.jsonObjectKeys || [];
                                 originalProp.unitCode = updatedProp.unitCode || originalProp.unitCode || '';
+                                console.log(`✅ Updated ${updatedProp.property} with ${originalProp.awsObjectKeys.length} AWS keys`);
+                            } else {
+                                console.log(`❌ Could not find original property for: ${updatedProp.property}`);
                             }
                         });
+                        
+                        console.log('📋 Results after update:', results.map(r => ({ 
+                            property: r.property, 
+                            awsObjectKeys: r.awsObjectKeys?.length || 0,
+                            jsonObjectKeys: r.jsonObjectKeys?.length || 0
+                        })));
                     }
                     
                     // Show detailed results
@@ -474,6 +495,15 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 addLogEntry('Starting HouseMonk invoice creation...', 'info');
                 addLogEntry('This will: Use AWS links → Create Invoices in HouseMonk', 'info');
+                
+                // Debug: Log what we're sending to Button 3
+                console.log('🔍 Sending to Button 3 (HouseMonk):');
+                console.log('📋 Results data:', results.map(r => ({ 
+                    property: r.property, 
+                    awsObjectKeys: r.awsObjectKeys?.length || 0,
+                    jsonObjectKeys: r.jsonObjectKeys?.length || 0,
+                    unitCode: r.unitCode
+                })));
                 
                 const response = await fetch('/api/housemonk/process-overuse', {
                     method: 'POST',
