@@ -20,12 +20,7 @@ function detectContentType(fileName) {
     return 'application/octet-stream';
 }
 
-// Create/register a THM Document for an uploaded objectKey
-async function createHouseMonkDocument(auth, { objectKey, fileName, fileFormat, status = 'active' }) {
-    const body = { objectKey, fileName, fileFormat, status };
-    const res = await auth.makeAuthenticatedRequest('POST', '/api/document', body, true);
-    return res.data;
-}
+// Note: On QA, presign returns a full document object; no POST /api/document
 
 // Upload to S3 using presigned URL
 async function uploadToS3(presignedUrl, buffer, contentType) {
@@ -48,13 +43,8 @@ async function uploadPdfAndMetadata(auth, pdfBuffer, fileName, overuseData) {
         mainPresigned.fileFormat = contentType;
         console.log(`    ✅ Uploaded: ${mainPresigned.objectKey}`);
 
-        // 2. Register the uploaded file as a THM Document
-        const registeredMain = await createHouseMonkDocument(auth, {
-            objectKey: mainPresigned.objectKey,
-            fileName: mainPresigned.fileName,
-            fileFormat: mainPresigned.fileFormat,
-            status: mainPresigned.status
-        });
+        // On QA environment, use the presigned response as the Document
+        const registeredMain = mainPresigned;
         
         // 2. Upload JSON metadata files
         const jsonObjectKeys = [];
@@ -79,12 +69,7 @@ async function uploadPdfAndMetadata(auth, pdfBuffer, fileName, overuseData) {
         summaryPresigned.status = summaryPresigned.status || 'active';
         summaryPresigned.fileName = summaryName;
         summaryPresigned.fileFormat = 'application/json';
-        const summaryDoc = await createHouseMonkDocument(auth, {
-            objectKey: summaryPresigned.objectKey,
-            fileName: summaryPresigned.fileName,
-            fileFormat: summaryPresigned.fileFormat,
-            status: summaryPresigned.status
-        });
+        const summaryDoc = summaryPresigned;
         jsonObjectKeys.push(summaryPresigned.objectKey);
         jsonDocuments.push(summaryDoc);
         console.log(`    ✅ Summary JSON uploaded: ${summaryPresigned.objectKey}`);
@@ -97,12 +82,7 @@ async function uploadPdfAndMetadata(auth, pdfBuffer, fileName, overuseData) {
             billsPresigned.status = billsPresigned.status || 'active';
             billsPresigned.fileName = billsName;
             billsPresigned.fileFormat = 'application/json';
-            const billsDoc = await createHouseMonkDocument(auth, {
-                objectKey: billsPresigned.objectKey,
-                fileName: billsPresigned.fileName,
-                fileFormat: billsPresigned.fileFormat,
-                status: billsPresigned.status
-            });
+            const billsDoc = billsPresigned;
             jsonObjectKeys.push(billsPresigned.objectKey);
             jsonDocuments.push(billsDoc);
             console.log(`    ✅ Bills JSON uploaded: ${billsPresigned.objectKey}`);
@@ -116,12 +96,7 @@ async function uploadPdfAndMetadata(auth, pdfBuffer, fileName, overuseData) {
             monthlyPresigned.status = monthlyPresigned.status || 'active';
             monthlyPresigned.fileName = monthlyName;
             monthlyPresigned.fileFormat = 'application/json';
-            const monthlyDoc = await createHouseMonkDocument(auth, {
-                objectKey: monthlyPresigned.objectKey,
-                fileName: monthlyPresigned.fileName,
-                fileFormat: monthlyPresigned.fileFormat,
-                status: monthlyPresigned.status
-            });
+            const monthlyDoc = monthlyPresigned;
             jsonObjectKeys.push(monthlyPresigned.objectKey);
             jsonDocuments.push(monthlyDoc);
             console.log(`    ✅ Monthly overuse JSON uploaded: ${monthlyPresigned.objectKey}`);
@@ -156,5 +131,5 @@ function sanitize(name) {
     return String(name || '').replace(/[^A-Za-z0-9_-]+/g, '_');
 }
 
-module.exports = { uploadPdfAndMetadata, getPresignedUrl, uploadToS3, createHouseMonkDocument };
+module.exports = { uploadPdfAndMetadata, getPresignedUrl, uploadToS3 };
 
