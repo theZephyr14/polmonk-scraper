@@ -1398,12 +1398,7 @@ app.post('/api/housemonk/process-overuse', async (req, res) => {
                 failedCount++;
             }
             
-            // Throttling delay between properties
-            if (i < overuseProperties.length - 1) {
-                const delaySeconds = 25;
-                console.log(`⏳ Waiting ${delaySeconds}s before next property...`);
-                await new Promise(r => setTimeout(r, delaySeconds * 1000));
-            }
+            // No delay needed for API calls - much faster processing
         }
         
         // Save results to file

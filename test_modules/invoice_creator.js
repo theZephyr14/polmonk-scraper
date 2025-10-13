@@ -29,29 +29,93 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfFilesOrK
         }
         console.log(`    ✅ Using tax code: ${taxCode.name || taxCode._id}`);
         
-        // Normalize files list: allow full docs or plain objectKeys
+        // Normalize files list: use exact structure that Badri specified
         const asArray = v => Array.isArray(v) ? v : (v ? [v] : []);
         const pdfInputs = asArray(pdfFilesOrKeys);
         const jsonInputs = asArray(jsonFilesOrKeys);
         const files = [
             ...pdfInputs.map(f => {
                 if (f && typeof f === 'object' && f.objectKey) {
-                    return { status: 'active', ...f };
+                    // Use the full document object as Badri specified
+                    return {
+                        status: 'active',
+                        organizations: f.organizations || ['6715f9742b22a37e2a4a2bca'],
+                        newBucket: f.newBucket || true,
+                        project: f.project || [],
+                        isDataDummy: f.isDataDummy || false,
+                        shared: f.shared || false,
+                        myMemories: f.myMemories || false,
+                        _id: f._id,
+                        success: f.success || true,
+                        message: f.message || '',
+                        url: f.url,
+                        fileFormat: f.fileFormat || 'application/pdf',
+                        fileName: f.fileName,
+                        objectKey: f.objectKey,
+                        createdBy: f.createdBy,
+                        updatedBy: f.updatedBy,
+                        uploadedBy: f.uploadedBy,
+                        uid: f.uid,
+                        createdAt: f.createdAt,
+                        updatedAt: f.updatedAt,
+                        __v: f.__v || 0,
+                        id: f.id
+                    };
                 }
                 return {
                     objectKey: String(f),
                     status: 'active',
+                    organizations: ['6715f9742b22a37e2a4a2bca'],
+                    newBucket: true,
+                    project: [],
+                    isDataDummy: false,
+                    shared: false,
+                    myMemories: false,
+                    success: true,
+                    message: '',
                     fileName: `utility_bill_${propertyData.property.replace(/\s+/g, '_')}.pdf`,
                     fileFormat: 'application/pdf'
                 };
             }),
             ...jsonInputs.map(f => {
                 if (f && typeof f === 'object' && f.objectKey) {
-                    return { status: 'active', ...f };
+                    // Use the full document object as Badri specified
+                    return {
+                        status: 'active',
+                        organizations: f.organizations || ['6715f9742b22a37e2a4a2bca'],
+                        newBucket: f.newBucket || true,
+                        project: f.project || [],
+                        isDataDummy: f.isDataDummy || false,
+                        shared: f.shared || false,
+                        myMemories: f.myMemories || false,
+                        _id: f._id,
+                        success: f.success || true,
+                        message: f.message || '',
+                        url: f.url,
+                        fileFormat: f.fileFormat || 'application/json',
+                        fileName: f.fileName,
+                        objectKey: f.objectKey,
+                        createdBy: f.createdBy,
+                        updatedBy: f.updatedBy,
+                        uploadedBy: f.uploadedBy,
+                        uid: f.uid,
+                        createdAt: f.createdAt,
+                        updatedAt: f.updatedAt,
+                        __v: f.__v || 0,
+                        id: f.id
+                    };
                 }
                 return {
                     objectKey: String(f),
                     status: 'active',
+                    organizations: ['6715f9742b22a37e2a4a2bca'],
+                    newBucket: true,
+                    project: [],
+                    isDataDummy: false,
+                    shared: false,
+                    myMemories: false,
+                    success: true,
+                    message: '',
                     fileName: `metadata_${propertyData.property.replace(/\s+/g, '_')}.json`,
                     fileFormat: 'application/json'
                 };
@@ -121,11 +185,11 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfFilesOrK
                 const current = await auth.makeAuthenticatedRequest('GET', `/api/transaction/${response.data._id}`, null, true);
                 const already = Array.isArray(current.data.files) ? current.data.files.length : 0;
                 if (already === 0) {
-                    console.log('    📎 No files present after create. Attempting to attach files via update...');
-                    // Attempt PATCH to add files
+                    console.log('    📎 No files present after create. Attaching via PUT...');
                     const updatePayload = { files };
-                    const updateRes = await auth.makeAuthenticatedRequest('PATCH', `/api/transaction/${response.data._id}`, updatePayload, true);
-                    console.log('    📎 Attach via PATCH response:', JSON.stringify(updateRes.data, null, 2).substring(0, 300));
+                    // Use PUT (PATCH may not be supported on this env)
+                    const updateRes = await auth.makeAuthenticatedRequest('PUT', `/api/transaction/${response.data._id}`, updatePayload, true);
+                    console.log('    📎 Attach via PUT response (files length):', Array.isArray(updateRes.data?.files) ? updateRes.data.files.length : 'unknown');
                 }
             }
         } catch (attachErr) {
