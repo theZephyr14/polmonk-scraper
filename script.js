@@ -30,6 +30,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }).catch(() => {});
 
+     // Try to restore last session on page load
+     try {
+         const storedResults = localStorage.getItem('polmonk:lastResults');
+         const storedPeriod = localStorage.getItem('polmonk:lastProcessedPeriod');
+         if (storedResults) {
+             const results = JSON.parse(storedResults);
+             console.log('🔄 Restoring last session with', results.length, 'properties');
+             
+             // Show main interface and display results
+             uploadSection.style.display = 'none';
+             mainInterface.style.display = 'block';
+             displayResults(results);
+             
+             // Enable process button
+             processBtn.disabled = false;
+         }
+     } catch (e) {
+         console.log('No previous session to restore');
+     }
+
     function handleExcelUpload(e) {
         if (e) { e.preventDefault(); }
         const excelFile = document.getElementById('excelFile').files[0];
@@ -358,6 +378,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show results
             displayResults(data.results);
             
+            // Save results to localStorage for session persistence
+            try { 
+                localStorage.setItem('polmonk:lastResults', JSON.stringify(data.results));
+                localStorage.setItem('polmonk:lastProcessedPeriod', period);
+                localStorage.setItem('polmonk:lastProcessedLimit10', limit10);
+            } catch(_) {}
+            
             // Keep modal open with OK button
             closeModal.classList.remove('disabled');
             modalOkBtn.style.display = 'block';
@@ -438,20 +465,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 addLogEntry('Starting PDF download and AWS upload for overuse properties...', 'info');
                 addLogEntry('This may take 2-3 minutes per property...', 'info');
                 
-                // Disable button during processing
-                pdfBtn.disabled = true;
-                pdfBtn.textContent = '⏳ Processing...';
-                
-                // Filter to only previously selected properties if available
-                const filtered = (window._selectedProperties && window._selectedProperties.size)
-                    ? results.filter(r => window._selectedProperties.has(r.property))
-                    : results;
+                 // Disable button during processing
+                 pdfBtn.disabled = true;
+                 pdfBtn.textContent = '⏳ Processing...';
+                 
+                 // Open SSE for Button 2 logs
+                 try {
+                     if (window._sse) { try { window._sse.close(); } catch(_) {} }
+                     window._sse = new EventSource('/api/process-properties-stream');
+                     window._sse.onmessage = (e) => {
+                         try {
+                             const data = JSON.parse(e.data);
+                             if (data.type === 'log') addLogEntry(data.message, data.level || 'info');
+                             if (data.type === 'progress') updateProgress(data.percentage || 0);
+                             if (data.type === 'error') addLogEntry(`Server Error: ${data.message}`, 'error');
+                         } catch(_) {}
+                     };
+                 } catch(_) {}
+                 
+                 // Filter to only previously selected properties if available
+                 const filtered = (window._selectedProperties && window._selectedProperties.size)
+                     ? results.filter(r => window._selectedProperties.has(r.property))
+                     : results;
 
-                const response = await fetch('/api/process-overuse-pdfs', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ results: filtered })
-                });
+                 const response = await fetch('/api/process-overuse-pdfs', {
+                     method: 'POST',
+                     headers: {'Content-Type': 'application/json'},
+                     body: JSON.stringify({ results: filtered })
+                 });
                 
                 const data = await response.json();
                 
@@ -515,6 +556,12 @@ document.addEventListener('DOMContentLoaded', function() {
                          const hasUploads = results.some(r => (r.awsObjectKeys && r.awsObjectKeys.length) || (r.awsDocuments && r.awsDocuments.length));
                          housemonkBtn.disabled = !hasUploads;
                          console.log('🔄 Re-checking Button 3 after Button 2:', { hasUploads, housemonkBtn: housemonkBtn.textContent });
+                         
+                         // Force visual update
+                         if (hasUploads) {
+                             housemonkBtn.style.opacity = '1';
+                             housemonkBtn.style.cursor = 'pointer';
+                         }
                      }
                      
                      closeModal.classList.remove('disabled');

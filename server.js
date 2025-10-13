@@ -1142,6 +1142,10 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                     console.log(`Downloading PDFs for ${prop.property}... (${i + 1}/${overuseProperties.length})`);
                     sendEvent({ type: 'log', level: 'info', message: `Downloading PDFs for ${prop.property}... (${i + 1}/${overuseProperties.length})` });
                     
+                    // Update progress
+                    const progress = Math.round(((i + 1) / overuseProperties.length) * 100);
+                    sendEvent({ type: 'progress', percentage: progress });
+                    
                     // Add delay between properties to avoid rate limiting
                     if (i > 0) {
                         console.log('⏳ Waiting 10 seconds to avoid rate limiting...');
@@ -1335,6 +1339,10 @@ app.post('/api/housemonk/process-overuse', async (req, res) => {
             const prop = overuseProperties[i];
             console.log(`\n[${i+1}/${overuseProperties.length}] Processing: ${prop.property}`);
             console.log(`💰 Overuse: ${prop.overuse_amount.toFixed(2)} €`);
+            
+            // Update progress
+            const progress = Math.round(((i + 1) / overuseProperties.length) * 100);
+            sendEvent({ type: 'progress', percentage: progress });
             
             try {
                 // Prefer full document objects if available, else fall back to object keys
