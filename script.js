@@ -550,19 +550,7 @@ document.addEventListener('DOMContentLoaded', function() {
                      // Persist uploads for resume
                      try { localStorage.setItem('polmonk:lastUploads', JSON.stringify(data.properties || [])); } catch(_) {}
                      
-                     // Re-enable Button 3 if uploads exist
-                     const housemonkBtn = document.querySelector('button[style*="6f42c1"]');
-                     if (housemonkBtn) {
-                         const hasUploads = results.some(r => (r.awsObjectKeys && r.awsObjectKeys.length) || (r.awsDocuments && r.awsDocuments.length));
-                         housemonkBtn.disabled = !hasUploads;
-                         console.log('🔄 Re-checking Button 3 after Button 2:', { hasUploads, housemonkBtn: housemonkBtn.textContent });
-                         
-                         // Force visual update
-                         if (hasUploads) {
-                             housemonkBtn.style.opacity = '1';
-                             housemonkBtn.style.cursor = 'pointer';
-                         }
-                     }
+                     // Button 3 is always available - no need to check AWS data
                      
                      closeModal.classList.remove('disabled');
                      modalOkBtn.style.display = 'block';
@@ -589,7 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
         housemonkBtn.style.marginTop = '10px';
         housemonkBtn.style.backgroundColor = '#6f42c1';
         housemonkBtn.textContent = '📝 Step 2: Create HouseMonk Invoices';
-        housemonkBtn.disabled = true;
+        housemonkBtn.disabled = false;
         housemonkBtn.onclick = async () => {
             try {
                 showProcessingModal('Create HouseMonk Invoices');
