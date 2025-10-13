@@ -1082,6 +1082,7 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
         }
         
         console.log(`Processing ${overuseProperties.length} properties with overuse for PDF download`);
+        sendEvent({ type: 'log', level: 'info', message: `Processing ${overuseProperties.length} properties with overuse for PDF download` });
         
         // Use real Polaroo credentials for PDF download and AWS upload
         const { downloadPdfsForPropertyWithContext } = require('./test_modules/pdf_downloader');
@@ -1099,12 +1100,14 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
         let browser, context;
         try {
             console.log('🟡 Creating shared browser session for PDF downloads...');
+            sendEvent({ type: 'log', level: 'info', message: '🟡 Creating shared browser session for PDF downloads...' });
             const session = await createBrowserSession();
             browser = session.browser;
             context = session.context;
             console.log('✅ Shared browser session created successfully');
         } catch (error) {
             console.error('❌ Failed to create shared browser session for PDFs:', error);
+            sendEvent({ type: 'log', level: 'error', message: `❌ Failed to create shared browser session for PDFs: ${error.message}` });
             return res.status(500).json({
                 success: false,
                 message: 'Failed to create browser session for PDF downloads',
@@ -1119,10 +1122,13 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
             let loginPage = await context.newPage();
             try {
                 console.log('🔑 Logging into Polaroo for PDF downloads...');
+                sendEvent({ type: 'log', level: 'info', message: '🔑 Logging into Polaroo for PDF downloads...' });
                 await loginToPolaroo(loginPage, 'francisco@node-living.com', 'Aribau126!');
                 console.log('✅ Login established for PDF downloads - will reuse for all properties');
+                sendEvent({ type: 'log', level: 'success', message: '✅ Login established for PDF downloads - will reuse for all properties' });
             } catch (error) {
                 console.error('❌ Failed to login for PDF downloads:', error);
+                sendEvent({ type: 'log', level: 'error', message: `❌ Failed to login for PDF downloads: ${error.message}` });
                 throw error;
             } finally {
                 await loginPage.close();
@@ -1132,10 +1138,12 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                 const prop = overuseProperties[i];
                 try {
                     console.log(`Downloading PDFs for ${prop.property}... (${i + 1}/${overuseProperties.length})`);
+                    sendEvent({ type: 'log', level: 'info', message: `Downloading PDFs for ${prop.property}... (${i + 1}/${overuseProperties.length})` });
                     
                     // Add delay between properties to avoid rate limiting
                     if (i > 0) {
                         console.log('⏳ Waiting 10 seconds to avoid rate limiting...');
+                        sendEvent({ type: 'log', level: 'info', message: '⏳ Waiting 10 seconds to avoid rate limiting...' });
                         await new Promise(resolve => setTimeout(resolve, 10000));
                     }
                     
@@ -1153,6 +1161,7 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                 if (pdfs.length > 0) {
                     try {
                         console.log(`☁️ Uploading ${pdfs.length} PDFs to HouseMonk AWS...`);
+                        sendEvent({ type: 'log', level: 'info', message: `☁️ Uploading ${pdfs.length} PDFs to HouseMonk AWS...` });
 
                         // Use working credentials from New try folder
                         const workingToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI2ODkxZGZiZjA1MmQxZDdmMzM2ZDBkNjIiLCJ0eXBlcyI6WyJhZG1pbiJdLCJpYXQiOjE3NTg1MzUzNjEsImV4cCI6MTc2NjMxMTM2MX0.wGHFL1Gd3cOODn6uHVcV5IbJ2xMZBoCoMmvydet8fRY";
@@ -1168,6 +1177,7 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                                 jsonDocuments: []
                             });
                             console.log(`✅ Uploaded PDF: ${pdf.fileName} → ${pdfObjectKey}`);
+                            sendEvent({ type: 'log', level: 'success', message: `✅ Uploaded PDF: ${pdf.fileName} → ${pdfObjectKey}` });
                         }
 
                         // Create and upload JSON metadata files
@@ -1185,6 +1195,7 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                                 first.jsonDocuments = [...(first.jsonDocuments || []), ...jsonDocuments];
                             }
                             console.log(`✅ Uploaded JSON: ${jsonFile.name} → ${newKeys.join(', ')}`);
+                            sendEvent({ type: 'log', level: 'success', message: `✅ Uploaded JSON: ${jsonFile.name} → ${newKeys.join(', ')}` });
                         }
 
                         // Update upload results with JSON object keys (compat)
@@ -1193,13 +1204,16 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                         });
 
                         console.log(`✅ Uploaded ${pdfs.length} PDFs to AWS for ${prop.property}`);
+                        sendEvent({ type: 'log', level: 'success', message: `✅ Uploaded ${pdfs.length} PDFs to AWS for ${prop.property}` });
 
                     } catch (uploadError) {
                         console.error(`❌ AWS upload failed for ${prop.property}:`, uploadError.response?.data?.message || uploadError.message);
+                        sendEvent({ type: 'log', level: 'error', message: `❌ AWS upload failed for ${prop.property}: ${uploadError.response?.data?.message || uploadError.message}` });
                         // Continue with success status but note upload failure
                     }
                 } else {
                     console.log(`⚠️ No PDFs downloaded for ${prop.property}`);
+                    sendEvent({ type: 'log', level: 'warning', message: `⚠️ No PDFs downloaded for ${prop.property}` });
                 }
                 
                 processedProperties.push({
@@ -1219,15 +1233,18 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                 });
                 
                 console.log(`✅ Processed ${prop.property}: ${pdfs.length} PDFs downloaded, ${uploadResults.length} uploaded to AWS`);
+                sendEvent({ type: 'log', level: 'success', message: `✅ Processed ${prop.property}: ${pdfs.length} PDFs downloaded, ${uploadResults.length} uploaded to AWS` });
 
                 // Small delay after processing each property
                 if (i < overuseProperties.length - 1) {
                     console.log('⏳ Brief pause before next property...');
+                    sendEvent({ type: 'log', level: 'info', message: '⏳ Brief pause before next property...' });
                     await new Promise(resolve => setTimeout(resolve, 2000));
                 }
 
             } catch (error) {
                 console.error(`❌ Failed to process ${prop.property}:`, error.message);
+                sendEvent({ type: 'log', level: 'error', message: `❌ Failed to process ${prop.property}: ${error.message}` });
                 processedProperties.push({
                     property: prop.property,
                     overuse_amount: prop.overuse_amount,
@@ -1242,6 +1259,7 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
         } finally {
             // Cleanup shared browser session only at the end
             console.log('🧹 Cleaning up shared browser session for PDF downloads...');
+            sendEvent({ type: 'log', level: 'info', message: '🧹 Cleaning up shared browser session for PDF downloads...' });
             await cleanupBrowserSession(browser, context);
         }
         

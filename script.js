@@ -1,4 +1,6 @@
 let excelData = null;
+// Global selection across steps
+window._selectedProperties = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     const uploadForm = document.getElementById('uploadForm');
@@ -245,6 +247,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const period = document.getElementById('monthPair')?.value || 'Jul-Aug';
             const limit10 = document.getElementById('limit10')?.checked || false;
             const selectedProps = properties.filter(p => selected.has(p.name));
+            // persist selection for later steps (Button 2/3)
+            window._selectedProperties = new Set(selectedProps.map(p => p.name));
             if (selectedProps.length === 0) { showMessage('Please select at least one property', 'error'); return; }
             showProcessingModal('Processing Properties');
             await processProperties(limit10 ? selectedProps.slice(0, 10) : selectedProps, period);
@@ -433,10 +437,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 pdfBtn.disabled = true;
                 pdfBtn.textContent = '⏳ Processing...';
                 
+                // Filter to only previously selected properties if available
+                const filtered = (window._selectedProperties && window._selectedProperties.size)
+                    ? results.filter(r => window._selectedProperties.has(r.property))
+                    : results;
+
                 const response = await fetch('/api/process-overuse-pdfs', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ results })
+                    body: JSON.stringify({ results: filtered })
                 });
                 
                 const data = await response.json();
