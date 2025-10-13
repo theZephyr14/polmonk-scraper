@@ -63,8 +63,8 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfFilesOrK
         const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         
         const payload = {
-            users: [unitDetails.tenantId],
-            type: 'Utilities', // Fixed: Changed from 'Invoice' to 'Utilities'
+            users: unitDetails.tenantId ? [unitDetails.tenantId] : undefined,
+            type: 'Invoice',
             transactionBelongsTo: 'Home',
             home: unitDetails.homeId,
             project: unitDetails.projectId,
@@ -103,6 +103,9 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfFilesOrK
             notes: `Generated from Polaroo overuse analysis for ${propertyData.property}. Electricity bills: ${propertyData.electricity_bills_count || 0}, Water bills: ${propertyData.water_bills_count || 0}. Total overuse: ${propertyData.overuse_amount.toFixed(2)}€`
         };
         
+        // Remove undefined keys (e.g., users if no tenant)
+        Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
         console.log(`    📋 Invoice payload prepared (${propertyData.overuse_amount.toFixed(2)}€, ${files.length} files)`);
         console.log(`    📋 Full payload:`, JSON.stringify(payload, null, 2));
         
