@@ -584,31 +584,16 @@ app.post('/api/process-properties', async (req, res) => {
             });
         }
 
-        // Temporary limit support: prefer body.limit, then TEMP_LIMIT, then DEFAULT_TEMP_LIMIT
-        const bodyLimit = parseInt(req.body.limit, 10);
-        const envLimit = parseInt(process.env.TEMP_LIMIT, 10);
-        const defaultEnvLimit = parseInt(process.env.DEFAULT_TEMP_LIMIT, 10); // e.g., set to 3 for tests
-        let effectiveLimit = null;
-        if (Number.isFinite(bodyLimit) && bodyLimit > 0) {
-            effectiveLimit = bodyLimit;
-        } else if (Number.isFinite(envLimit) && envLimit > 0) {
-            effectiveLimit = envLimit;
-        } else if (Number.isFinite(defaultEnvLimit) && defaultEnvLimit > 0) {
-            effectiveLimit = defaultEnvLimit;
-        }
-        const totalToProcess = effectiveLimit ? Math.min(effectiveLimit, properties.length) : properties.length;
+        // Remove temporary limit: always process all provided properties
+        const effectiveLimit = null;
+        const totalToProcess = properties.length;
 
         console.log(`🚀 Starting processing for ${totalToProcess} properties`);
         if (period) {
             console.log(`📅 Period selected: ${period}`);
         }
-        if (effectiveLimit) {
-            console.log(`⛔ TEMP LIMIT ACTIVE: Capping run to first ${totalToProcess} properties`);
-            sendEvent({ type: 'log', level: 'warning', message: `⛔ TEMP LIMIT: processing first ${totalToProcess} properties` });
-        } else {
-            console.log('ℹ️ No TEMP LIMIT provided; processing all properties');
-            sendEvent({ type: 'log', level: 'info', message: 'ℹ️ No TEMP LIMIT provided; processing all properties' });
-        }
+        console.log('ℹ️ Processing all provided properties');
+        sendEvent({ type: 'log', level: 'info', message: 'ℹ️ Processing all provided properties' });
         
         // Determine target months from requested period (fallback to last 2 months if not provided)
         let targetMonths;
@@ -710,7 +695,6 @@ app.post('/api/process-properties', async (req, res) => {
             
             // Process each property using the shared browser session (no re-login needed)
             for (let i = 0; i < properties.length; i++) {
-                if (effectiveLimit && i >= effectiveLimit) break;
                 
                 // Add delay BEFORE processing each property (except first)
                 if (i > 0) {
