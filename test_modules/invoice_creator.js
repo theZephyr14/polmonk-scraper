@@ -1,5 +1,5 @@
 // Create invoice in HouseMonk for property overuse
-async function createInvoiceForOveruse(auth, resolver, propertyData, pdfObjectKeys, jsonObjectKeys) {
+async function createInvoiceForOveruse(auth, resolver, propertyData, pdfFilesOrKeys, jsonFilesOrKeys) {
     console.log(`  📝 Creating invoice for ${propertyData.property}...`);
     
     try {
@@ -29,19 +29,48 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfObjectKe
         }
         console.log(`    ✅ Using tax code: ${taxCode.name || taxCode._id}`);
         
+        // Normalize files list: allow full docs or plain objectKeys
+        const asArray = v => Array.isArray(v) ? v : (v ? [v] : []);
+        const pdfInputs = asArray(pdfFilesOrKeys);
+        const jsonInputs = asArray(jsonFilesOrKeys);
+        const files = [
+            ...pdfInputs.map(f => {
+                if (f && typeof f === 'object' && f.objectKey) {
+                    return { status: 'active', ...f };
+                }
+                return {
+                    objectKey: String(f),
+                    status: 'active',
+                    fileName: `utility_bill_${propertyData.property.replace(/\s+/g, '_')}.pdf`,
+                    fileFormat: 'application/pdf'
+                };
+            }),
+            ...jsonInputs.map(f => {
+                if (f && typeof f === 'object' && f.objectKey) {
+                    return { status: 'active', ...f };
+                }
+                return {
+                    objectKey: String(f),
+                    status: 'active',
+                    fileName: `metadata_${propertyData.property.replace(/\s+/g, '_')}.json`,
+                    fileFormat: 'application/json'
+                };
+            })
+        ];
+
         // 3. Build invoice payload
         const today = new Date().toISOString().split('T')[0];
         const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         
         const payload = {
-            users: unitDetails.tenantId ? [unitDetails.tenantId] : [],
-            type: 'Invoice', // Fixed: Use valid HouseMonk transaction type
+            users: [unitDetails.tenantId],
+            type: 'Utilities', // Fixed: Changed from 'Invoice' to 'Utilities'
             transactionBelongsTo: 'Home',
             home: unitDetails.homeId,
             project: unitDetails.projectId,
             listing: unitDetails.listingId,
             source: 'api_external',
-            status: 'draft', // Use valid HouseMonk status
+            status: 'due', // ensure document number is generated
             dueDate,
             invoiceDate: today,
             taxable: true,
@@ -54,9 +83,6 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfObjectKe
             organization: unitDetails.organizationId || unitDetails.projectId, // Use project as fallback
             createdBy: auth.config.userId, // Add creator
             updatedBy: auth.config.userId, // Add updater
-            // Add more required fields for invoice
-            invoiceNumber: `INV-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
-            reference: `Utilities-${propertyData.property.replace(/\s+/g, '-')}`,
             itemDetails: [{
                 amount: propertyData.overuse_amount,
                 taxable: true,
@@ -73,26 +99,11 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfObjectKe
                 unit: 'unit',
                 taxCode: taxCode._id
             }],
-            // Fixed: Use the correct document structure based on HouseMonk API docs
-            // The files should be an array of document objects with the structure from the presigned URL response
-            files: [
-                ...pdfObjectKeys.map(key => ({ 
-                    objectKey: key, 
-                    status: 'active',
-                    fileName: `utility_bill_${propertyData.property.replace(/\s+/g, '_')}.pdf`,
-                    fileFormat: 'application/pdf'
-                })),
-                ...(jsonObjectKeys && jsonObjectKeys.length > 0 ? jsonObjectKeys.map(key => ({
-                    objectKey: key,
-                    status: 'active',
-                    fileName: `metadata_${propertyData.property.replace(/\s+/g, '_')}.json`,
-                    fileFormat: 'application/json'
-                })) : [])
-            ],
+            files,
             notes: `Generated from Polaroo overuse analysis for ${propertyData.property}. Electricity bills: ${propertyData.electricity_bills_count || 0}, Water bills: ${propertyData.water_bills_count || 0}. Total overuse: ${propertyData.overuse_amount.toFixed(2)}€`
         };
         
-        console.log(`    📋 Invoice payload prepared (${propertyData.overuse_amount.toFixed(2)}€, ${pdfObjectKeys.length} PDFs)`);
+        console.log(`    📋 Invoice payload prepared (${propertyData.overuse_amount.toFixed(2)}€, ${files.length} files)`);
         console.log(`    📋 Full payload:`, JSON.stringify(payload, null, 2));
         
         // 4. Create invoice via API

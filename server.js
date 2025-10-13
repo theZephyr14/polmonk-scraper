@@ -1174,32 +1174,16 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                         const workingToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI2ODkxZGZiZjA1MmQxZDdmMzM2ZDBkNjIiLCJ0eXBlcyI6WyJhZG1pbiJdLCJpYXQiOjE3NTg1MzUzNjEsImV4cCI6MTc2NjMxMTM2MX0.wGHFL1Gd3cOODn6uHVcV5IbJ2xMZBoCoMmvydet8fRY";
                         const workingClientId = "1326bbe0-8ed1-11f0-b658-7dd414f87b53";
 
-                        // Upload PDFs
+                        // Upload PDFs (using uploader module to normalize document objects)
                         for (const pdf of pdfs) {
-                            // Get presigned URL for PDF
-                            const presignedResponse = await axios.post(
-                                "https://dashboard.thehousemonk.com/api/document/presigned",
-                                { fileName: pdf.fileName },
-                                { 
-                                    headers: { 
-                                        authorization: workingToken, 
-                                        "x-api-key": workingClientId, 
-                                        "content-type": "application/json" 
-                                    } 
-                                }
-                            );
-
-                            // Upload PDF to S3
-                            await axios.put(presignedResponse.data.url, pdf.buffer, { 
-                                headers: { "Content-Type": "application/pdf" } 
-                            });
-
+                            const { pdfObjectKey, pdfDocument } = await uploadPdfAndMetadata(auth, pdf.buffer, pdf.fileName, prop);
                             uploadResults.push({
-                                pdfObjectKey: presignedResponse.data.objectKey,
-                                jsonObjectKeys: []
+                                pdfObjectKey,
+                                pdfDocument,
+                                jsonObjectKeys: [],
+                                jsonDocuments: []
                             });
-
-                            console.log(`✅ Uploaded PDF: ${pdf.fileName} → ${presignedResponse.data.objectKey}`);
+                            console.log(`✅ Uploaded PDF: ${pdf.fileName} → ${pdfObjectKey}`);
                         }
 
                         // Create and upload JSON metadata files
@@ -1208,29 +1192,18 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                         
                         for (const jsonFile of jsonFiles) {
                             // Get presigned URL for JSON
-                            const jsonPresignedResponse = await axios.post(
-                                "https://dashboard.thehousemonk.com/api/document/presigned",
-                                { fileName: jsonFile.name },
-                                { 
-                                    headers: { 
-                                        authorization: workingToken, 
-                                        "x-api-key": workingClientId, 
-                                        "content-type": "application/json" 
-                                    } 
-                                }
-                            );
-
-                            // Upload JSON to S3
-                            const jsonBuffer = Buffer.from(jsonFile.content, "utf8");
-                            await axios.put(jsonPresignedResponse.data.url, jsonBuffer, { 
-                                headers: { "Content-Type": "application/json" } 
-                            });
-
-                            jsonObjectKeys.push(jsonPresignedResponse.data.objectKey);
-                            console.log(`✅ Uploaded JSON: ${jsonFile.name} → ${jsonPresignedResponse.data.objectKey}`);
+                            const { jsonObjectKeys: newKeys, jsonDocuments } = await uploadPdfAndMetadata(auth, Buffer.from(jsonFile.content, "utf8"), jsonFile.name, prop);
+                            newKeys.forEach(k => jsonObjectKeys.push(k));
+                            // attach json documents to first result bucket
+                            if (uploadResults.length > 0) {
+                                const first = uploadResults[0];
+                                first.jsonObjectKeys = [...(first.jsonObjectKeys || []), ...newKeys];
+                                first.jsonDocuments = [...(first.jsonDocuments || []), ...jsonDocuments];
+                            }
+                            console.log(`✅ Uploaded JSON: ${jsonFile.name} → ${newKeys.join(', ')}`);
                         }
 
-                        // Update upload results with JSON object keys
+                        // Update upload results with JSON object keys (compat)
                         uploadResults.forEach(result => {
                             result.jsonObjectKeys = jsonObjectKeys;
                         });
@@ -1255,7 +1228,10 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
                     pdfCount: pdfs.length,
                     uploadCount: uploadResults.length,
                     awsObjectKeys: uploadResults.map(r => r.pdfObjectKey),
-                    jsonObjectKeys: uploadResults.length > 0 ? uploadResults[0].jsonObjectKeys : []
+                    jsonObjectKeys: uploadResults.length > 0 ? uploadResults[0].jsonObjectKeys : [],
+                    // New: provide full document objects so frontend can pass them to Button 3
+                    awsDocuments: uploadResults.map(r => r.pdfDocument).filter(Boolean),
+                    jsonDocuments: uploadResults.length > 0 ? (uploadResults[0].jsonDocuments || []) : []
                 });
                 
                 console.log(`✅ Processed ${prop.property}: ${pdfs.length} PDFs downloaded, ${uploadResults.length} uploaded to AWS`);
@@ -1357,19 +1333,19 @@ app.post('/api/housemonk/process-overuse', async (req, res) => {
             console.log(`💰 Overuse: ${prop.overuse_amount.toFixed(2)} €`);
             
             try {
-                // Check if AWS links are available from Button 2
-                if (!prop.awsObjectKeys || prop.awsObjectKeys.length === 0) {
-                    console.log('❌ No AWS links found - please run Button 2 first to upload PDFs');
-                    throw new Error('No AWS links found. Please run "Download PDFs & Upload to AWS" first.');
+                // Prefer full document objects if available, else fall back to object keys
+                const pdfInputs = (prop.awsDocuments && prop.awsDocuments.length > 0) ? prop.awsDocuments : (prop.awsObjectKeys || []);
+                const jsonInputs = (prop.jsonDocuments && prop.jsonDocuments.length > 0) ? prop.jsonDocuments : (prop.jsonObjectKeys || []);
+
+                if ((!pdfInputs || pdfInputs.length === 0)) {
+                    console.log('❌ No AWS files found - please run Button 2 first to upload PDFs');
+                    throw new Error('No AWS files found. Please run "Download PDFs & Upload to AWS" first.');
                 }
+
+                console.log(`📋 Using ${pdfInputs.length} AWS files from Button 2`);
                 
-                console.log(`📋 Using ${prop.awsObjectKeys.length} AWS links from Button 2`);
-                
-                // Use existing AWS links (no need to download/upload again)
-                const pdfObjectKeys = prop.awsObjectKeys;
-                const jsonObjectKeys = prop.jsonObjectKeys || []; // Use JSON metadata from Button 2
-                
-                console.log(`✅ Using existing AWS files: ${pdfObjectKeys.join(', ')}`);
+                const printable = pdfInputs.map(f => (typeof f === 'string' ? f : f.objectKey));
+                console.log(`✅ Using existing AWS files: ${printable.join(', ')}`);
                 
                 // Create invoice in HouseMonk using existing AWS files
                 console.log('📝 Creating invoice in HouseMonk...');
@@ -1377,8 +1353,8 @@ app.post('/api/housemonk/process-overuse', async (req, res) => {
                     auth,
                     resolver,
                     prop,
-                    pdfObjectKeys,
-                    jsonObjectKeys
+                    pdfInputs,
+                    jsonInputs
                 );
                 
                 console.log(`✅ Invoice created: ${invoice._id}`);
@@ -1389,10 +1365,10 @@ app.post('/api/housemonk/process-overuse', async (req, res) => {
                     invoiceId: invoice._id,
                     invoiceUrl: `${auth.config.baseUrl}/dashboard/transactions/${invoice._id}`,
                     overuseAmount: prop.overuse_amount,
-                    pdfCount: pdfObjectKeys.length,
+                    pdfCount: pdfInputs.length,
                     aws: {
-                        pdfs: pdfObjectKeys,
-                        json: jsonObjectKeys
+                        pdfs: printable,
+                        json: (Array.isArray(jsonInputs) ? jsonInputs.map(f => (typeof f === 'string' ? f : f.objectKey)) : [])
                     }
                 });
                 
