@@ -506,19 +506,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     }
                     
-                    // Persist uploads for resume
-                    try { localStorage.setItem('polmonk:lastUploads', JSON.stringify(data.properties || [])); } catch(_) {}
-                    
-                    // Re-enable Button 3 if uploads exist
-                    const housemonkBtn = document.querySelector('button[style*="6f42c1"]');
-                    if (housemonkBtn) {
-                        const hasUploads = results.some(r => (r.awsObjectKeys && r.awsObjectKeys.length) || (r.awsDocuments && r.awsDocuments.length));
-                        housemonkBtn.disabled = !hasUploads;
-                        console.log('🔄 Re-checking Button 3 after Button 2:', { hasUploads, housemonkBtn: housemonkBtn.textContent });
-                    }
-                    
-                    closeModal.classList.remove('disabled');
-                    modalOkBtn.style.display = 'block';
+                     // Persist uploads for resume
+                     try { localStorage.setItem('polmonk:lastUploads', JSON.stringify(data.properties || [])); } catch(_) {}
+                     
+                     // Re-enable Button 3 if uploads exist
+                     const housemonkBtn = document.querySelector('button[style*="6f42c1"]');
+                     if (housemonkBtn) {
+                         const hasUploads = results.some(r => (r.awsObjectKeys && r.awsObjectKeys.length) || (r.awsDocuments && r.awsDocuments.length));
+                         housemonkBtn.disabled = !hasUploads;
+                         console.log('🔄 Re-checking Button 3 after Button 2:', { hasUploads, housemonkBtn: housemonkBtn.textContent });
+                     }
+                     
+                     closeModal.classList.remove('disabled');
+                     modalOkBtn.style.display = 'block';
                 } else {
                     addLogEntry(`❌ Processing failed: ${data.message}`, 'error');
                     closeModal.classList.remove('disabled');
