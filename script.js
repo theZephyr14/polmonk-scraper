@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Show loading state
-        const submitBtn = document.querySelector('#uploadForm .submit-btn');
+        const submitBtn = document.getElementById('uploadSubmit') || document.querySelector('#uploadForm .submit-btn');
         const originalText = submitBtn.textContent;
         submitBtn.textContent = 'Processing...';
         submitBtn.disabled = true;

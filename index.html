@@ -13,13 +13,13 @@
             <h1>Excel Data Manager</h1>
             <p>Upload your Excel file to get started</p>
             
-            <form id="uploadForm" class="upload-form">
+            <form id="uploadForm" class="upload-form" novalidate>
                 <div class="form-group">
                     <label for="excelFile">Excel File:</label>
                     <input type="file" id="excelFile" name="excelFile" accept=".xlsx,.xls" required>
                 </div>
                 
-                <button type="submit" class="submit-btn">Upload & Continue</button>
+                <button type="button" id="uploadSubmit" class="submit-btn">Upload & Continue</button>
             </form>
             
             <div id="message" class="message"></div>
