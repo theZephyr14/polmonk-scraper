@@ -5,7 +5,8 @@ async function getPresignedUrl(auth, fileName) {
     const response = await auth.makeAuthenticatedRequest(
         'POST',
         '/api/document/presigned',
-        { fileName }
+        { fileName },
+        true // use user token – required for presign
     );
     return response.data; // { url, objectKey, fileName, fileFormat, ... }
 }
