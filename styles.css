@@ -239,6 +239,10 @@ input[type="file"] {
     transform: none;
     box-shadow: none;
 }
+.submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 
 /* Properties List */
 .properties-list {
@@ -327,6 +331,10 @@ input[type="file"] {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+.close-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .close-btn:hover {

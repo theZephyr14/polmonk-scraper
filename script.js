@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const processBtn = document.getElementById('processBtn');
     const processingModal = document.getElementById('processingModal');
     const closeModal = document.getElementById('closeModal');
+    const modalOkBtn = document.getElementById('modalOkBtn');
+    const modalTitle = document.getElementById('modalTitle');
     const secretsTab = document.getElementById('secretsTab');
     const secretsButton = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.dataset.tab === 'secrets');
 
@@ -178,20 +180,25 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Show modal and start processing
-        showProcessingModal();
+            // Show modal and start processing
+            showProcessingModal('Processing Properties');
         await processProperties(limit10 ? properties.slice(0, 10) : properties, period);
     });
     
-    // Close modal
+    // Modal close controls
+    closeModal.classList.add('disabled');
     closeModal.addEventListener('click', function() {
+        if (closeModal.classList.contains('disabled')) return;
         processingModal.style.display = 'none';
     });
-    
-    // Close modal when clicking outside
+    modalOkBtn.addEventListener('click', function() {
+        processingModal.style.display = 'none';
+        modalOkBtn.style.display = 'none';
+        closeModal.classList.add('disabled');
+    });
     processingModal.addEventListener('click', function(e) {
         if (e.target === processingModal) {
-            processingModal.style.display = 'none';
+            // do not close while running
         }
     });
     
@@ -219,23 +226,63 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Selection state
+        const selected = new Set();
+        const selectAll = document.getElementById('selectAllProps');
+        selectAll.checked = true;
+
         properties.forEach((property, index) => {
-            const propertyItem = document.createElement('div');
-            propertyItem.className = 'property-item';
+            const wrapper = document.createElement('label');
+            wrapper.className = 'property-item';
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'center';
+            wrapper.style.gap = '10px';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = true;
+            selected.add(property.name);
+            cb.addEventListener('change', () => {
+                if (cb.checked) selected.add(property.name); else selected.delete(property.name);
+            });
             const unitCodeText = property.unitCode ? ` - Unit: ${property.unitCode}` : '';
-            propertyItem.textContent = `${index + 1}. ${property.name} (${property.rooms} rooms${unitCodeText})`;
-            propertiesList.appendChild(propertyItem);
+            const span = document.createElement('span');
+            span.textContent = `${index + 1}. ${property.name} (${property.rooms} rooms${unitCodeText})`;
+            wrapper.appendChild(cb);
+            wrapper.appendChild(span);
+            propertiesList.appendChild(wrapper);
+        });
+
+        selectAll.addEventListener('change', () => {
+            const inputs = propertiesList.querySelectorAll('input[type="checkbox"]');
+            inputs.forEach((cb, i) => {
+                cb.checked = selectAll.checked;
+                const name = properties[i].name;
+                if (selectAll.checked) selected.add(name); else selected.delete(name);
+            });
         });
         
         // Enable process button
         processBtn.disabled = false;
+
+        // Override process handler to use selection
+        processBtn.onclick = async function() {
+            const period = document.getElementById('monthPair')?.value || 'Jul-Aug';
+            const limit10 = document.getElementById('limit10')?.checked || false;
+            const selectedProps = properties.filter(p => selected.has(p.name));
+            if (selectedProps.length === 0) { showMessage('Please select at least one property', 'error'); return; }
+            showProcessingModal('Processing Properties');
+            await processProperties(limit10 ? selectedProps.slice(0, 10) : selectedProps, period);
+        };
     }
     
-    function showProcessingModal() {
+    function showProcessingModal(title = 'Processing Properties') {
         processingModal.style.display = 'flex';
+        modalTitle.textContent = title;
         document.getElementById('logContent').innerHTML = '';
         document.getElementById('progressFill').style.width = '0%';
         document.getElementById('progressText').textContent = '0%';
+        closeModal.classList.add('disabled');
+        modalOkBtn.style.display = 'none';
     }
     
     function addLogEntry(message, type = 'info') {
@@ -326,10 +373,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show results
             displayResults(data.results);
             
-            // Close modal after a delay
-            setTimeout(() => {
-                processingModal.style.display = 'none';
-            }, 3000);
+            // Keep modal open with OK button
+            closeModal.classList.remove('disabled');
+            modalOkBtn.style.display = 'block';
             
         } catch (error) {
             console.error('Processing error:', error);
@@ -403,6 +449,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pdfBtn.textContent = '📄 Step 1: Download PDFs & Upload to AWS';
         pdfBtn.onclick = async () => {
             try {
+                showProcessingModal('Download PDFs & Upload to AWS');
                 addLogEntry('Starting PDF download and AWS upload for overuse properties...', 'info');
                 addLogEntry('This may take 2-3 minutes per property...', 'info');
                 
@@ -469,14 +516,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     }
                     
-                    alert(resultMessage);
+                    // Persist uploads for resume
+                    try { localStorage.setItem('polmonk:lastUploads', JSON.stringify(data.properties || [])); } catch(_) {}
+                    closeModal.classList.remove('disabled');
+                    modalOkBtn.style.display = 'block';
                 } else {
                     addLogEntry(`❌ Processing failed: ${data.message}`, 'error');
-                    alert(`❌ Processing failed: ${data.message}`);
+                    closeModal.classList.remove('disabled');
+                    modalOkBtn.style.display = 'block';
                 }
             } catch (error) {
                 addLogEntry(`❌ Processing failed: ${error.message}`, 'error');
-                alert(`❌ Processing failed: ${error.message}`);
+                closeModal.classList.remove('disabled');
+                modalOkBtn.style.display = 'block';
             } finally {
                 // Re-enable button
                 pdfBtn.disabled = false;
@@ -491,8 +543,10 @@ document.addEventListener('DOMContentLoaded', function() {
         housemonkBtn.style.marginTop = '10px';
         housemonkBtn.style.backgroundColor = '#6f42c1';
         housemonkBtn.textContent = '📝 Step 2: Create HouseMonk Invoices';
+        housemonkBtn.disabled = true;
         housemonkBtn.onclick = async () => {
             try {
+                showProcessingModal('Create HouseMonk Invoices');
                 addLogEntry('Starting HouseMonk invoice creation...', 'info');
                 addLogEntry('This will: Use AWS links → Create Invoices in HouseMonk', 'info');
                 
@@ -528,19 +582,27 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     }
                     
-                    alert(`✅ HouseMonk Integration Complete!\n\nSuccess: ${data.successCount}\nFailed: ${data.failedCount}\n\nCheck the logs for invoice links.`);
+                    try { localStorage.setItem('polmonk:lastInvoices', JSON.stringify(data.items || [])); } catch(_) {}
+                    closeModal.classList.remove('disabled');
+                    modalOkBtn.style.display = 'block';
                 } else {
                     addLogEntry(`❌ HouseMonk integration failed: ${data.message}`, 'error');
-                    alert(`❌ HouseMonk integration failed: ${data.message}`);
+                    closeModal.classList.remove('disabled');
+                    modalOkBtn.style.display = 'block';
                 }
             } catch (error) {
                 addLogEntry(`❌ HouseMonk integration failed: ${error.message}`, 'error');
-                alert(`❌ HouseMonk integration failed: ${error.message}`);
+                closeModal.classList.remove('disabled');
+                modalOkBtn.style.display = 'block';
             }
         };
         resultsList.appendChild(housemonkBtn);
         
         resultsContainer.style.display = 'block';
+
+        // Enable Step 3 only when uploads exist
+        const hasUploads = (results || []).some(r => (r.awsObjectKeys && r.awsObjectKeys.length) || (r.awsDocuments && r.awsDocuments.length));
+        housemonkBtn.disabled = !hasUploads;
     }
     
     function showMessage(text, type) {
@@ -563,4 +625,5 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Selected file:', fileName);
         }
     });
+});
 });

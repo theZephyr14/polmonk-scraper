@@ -64,9 +64,12 @@
                 
                 <!-- Properties Tab -->
                 <div id="propertiesTab" class="tab-panel">
-                    <div class="properties-header">
+            <div class="properties-header">
                         <h2>Properties from Excel</h2>
                         <div style="display:flex; gap:12px; align-items:center;">
+                    <label for="selectAllProps" style="display:flex;align-items:center;gap:6px;font-size:14px;color:#555;">
+                        <input type="checkbox" id="selectAllProps" /> Select All
+                    </label>
                             <label for="monthPair" style="font-size:14px;color:#555;">Period:</label>
                             <select id="monthPair" style="padding:8px 10px;border:1px solid #ddd;border-radius:6px;">
                                 <option value="Jan-Feb">Jan-Feb</option>
@@ -87,7 +90,7 @@
                     <div id="processingModal" class="processing-modal" style="display: none;">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h3>Processing Properties</h3>
+                                <h3 id="modalTitle">Processing Properties</h3>
                                 <button id="closeModal" class="close-btn">&times;</button>
                             </div>
                             <div class="modal-body">
@@ -100,6 +103,9 @@
                                 <div id="logContainer" class="log-container">
                                     <div class="log-header">Live Log:</div>
                                     <div id="logContent" class="log-content"></div>
+                                </div>
+                                <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+                                    <button id="modalOkBtn" class="submit-btn" style="width:auto; display:none;">OK</button>
                                 </div>
                             </div>
                         </div>
