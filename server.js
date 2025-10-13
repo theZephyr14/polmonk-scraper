@@ -694,7 +694,9 @@ app.post('/api/process-properties', async (req, res) => {
             }
             
             // Process each property using the shared browser session (no re-login needed)
-            for (let i = 0; i < properties.length; i++) {
+            // Honor client selection only: do not process any other properties
+            const total = totalToProcess;
+            for (let i = 0; i < total; i++) {
                 
                 // Add delay BEFORE processing each property (except first)
                 if (i > 0) {
@@ -706,7 +708,7 @@ app.post('/api/process-properties', async (req, res) => {
                 const roomCount = property.rooms || 0;
                 
                 // Update progress bar
-                const progressPercentage = Math.round(((i + 1) / totalToProcess) * 100);
+                const progressPercentage = Math.round(((i + 1) / total) * 100);
                 sendEvent({ type: 'progress', percentage: progressPercentage });
                 
                 logs.push({ message: `🏠 Processing property ${i + 1}/${totalToProcess}: ${propertyName} (${roomCount} rooms)`, level: 'info' });

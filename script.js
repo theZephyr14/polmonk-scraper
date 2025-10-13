@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const originalText = submitBtn.textContent;
         submitBtn.textContent = 'Processing...';
         submitBtn.disabled = true;
-
+        
         const reader = new FileReader();
         reader.onload = function(ev) {
             try {
@@ -133,8 +133,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Process button functionality
-    processBtn.addEventListener('click', async function() {
+    // Default Process button functionality (named so we can remove it later)
+    async function defaultProcessClick() {
         if (!excelData || excelData.length === 0) {
             showMessage('No properties to process', 'error');
             return;
@@ -158,10 +158,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-            // Show modal and start processing
+        // Show modal and start processing
             showProcessingModal('Processing Properties');
+        // Open SSE and ensure only one run at a time
+        try { if (window._sse) { window._sse.close(); } } catch(_) {}
         await processProperties(limit10 ? properties.slice(0, 10) : properties, period);
-    });
+    }
+    processBtn.addEventListener('click', defaultProcessClick);
     
     // Modal close controls
     closeModal.classList.add('disabled');
@@ -208,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selected = new Set();
         const selectAll = document.getElementById('selectAllProps');
         selectAll.checked = true;
-
+        
         properties.forEach((property, index) => {
             const wrapper = document.createElement('label');
             wrapper.className = 'property-item';
@@ -243,7 +246,8 @@ document.addEventListener('DOMContentLoaded', function() {
         processBtn.disabled = false;
 
         // Override process handler to use selection
-        processBtn.onclick = async function() {
+        processBtn.removeEventListener('click', defaultProcessClick);
+        processBtn.addEventListener('click', async function() {
             const period = document.getElementById('monthPair')?.value || 'Jul-Aug';
             const limit10 = document.getElementById('limit10')?.checked || false;
             const selectedProps = properties.filter(p => selected.has(p.name));
@@ -251,8 +255,9 @@ document.addEventListener('DOMContentLoaded', function() {
             window._selectedProperties = new Set(selectedProps.map(p => p.name));
             if (selectedProps.length === 0) { showMessage('Please select at least one property', 'error'); return; }
             showProcessingModal('Processing Properties');
+            try { if (window._sse) { window._sse.close(); } } catch(_) {}
             await processProperties(limit10 ? selectedProps.slice(0, 10) : selectedProps, period);
-        };
+        });
     }
     
     function showProcessingModal(title = 'Processing Properties') {
@@ -588,6 +593,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Enable Step 3 only when uploads exist
         const hasUploads = (results || []).some(r => (r.awsObjectKeys && r.awsObjectKeys.length) || (r.awsDocuments && r.awsDocuments.length));
         housemonkBtn.disabled = !hasUploads;
+        console.log('🔍 Button 3 enable check:', { 
+            totalResults: results.length, 
+            hasUploads, 
+            sample: results.slice(0, 2).map(r => ({ 
+                property: r.property, 
+                awsObjectKeys: r.awsObjectKeys?.length || 0, 
+                awsDocuments: r.awsDocuments?.length || 0 
+            })) 
+        });
     }
     
     function showMessage(text, type) {
