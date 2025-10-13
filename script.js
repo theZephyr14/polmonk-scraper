@@ -28,71 +28,47 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }).catch(() => {});
 
-    // Upload form submission
-    uploadForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
+    function handleExcelUpload(e) {
+        if (e) { e.preventDefault(); }
         const excelFile = document.getElementById('excelFile').files[0];
-        
-        if (!excelFile) {
-            showMessage('Please select an Excel file', 'error');
-            return;
-        }
-        
-        // Validate file type
-        const allowedTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
-                             'application/vnd.ms-excel'];
-        if (!allowedTypes.includes(excelFile.type)) {
-            showMessage('Please upload a valid Excel file (.xlsx or .xls)', 'error');
-            return;
-        }
-        
-        // Show loading state
+        if (!excelFile) { showMessage('Please select an Excel file', 'error'); return false; }
+        const allowedTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.ms-excel'];
+        if (!allowedTypes.includes(excelFile.type)) { showMessage('Please upload a valid Excel file (.xlsx or .xls)', 'error'); return false; }
+
         const submitBtn = document.getElementById('uploadSubmit') || document.querySelector('#uploadForm .submit-btn');
         const originalText = submitBtn.textContent;
         submitBtn.textContent = 'Processing...';
         submitBtn.disabled = true;
-        
-        // Process Excel file locally
+
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function(ev) {
             try {
-                const data = new Uint8Array(e.target.result);
+                const data = new Uint8Array(ev.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                
-                if (jsonData.length === 0) {
-                    showMessage('The Excel file appears to be empty', 'error');
-                    submitBtn.textContent = originalText;
-                    submitBtn.disabled = false;
-                    return;
-                }
-                
-                // Store the data
+                if (jsonData.length === 0) { showMessage('The Excel file appears to be empty', 'error'); reset(); return; }
                 excelData = jsonData;
-                
-                // Show success and switch to main interface
                 showMessage('Excel file uploaded successfully!', 'success');
-                
                 setTimeout(() => {
                     uploadSection.style.display = 'none';
                     mainInterface.style.display = 'block';
                     loadProperties();
-                }, 1000);
-                
-            } catch (error) {
-                console.error('Error processing Excel file:', error);
+                }, 400);
+            } catch (err) {
+                console.error('Error processing Excel file:', err);
                 showMessage('Error processing Excel file. Please try again.', 'error');
-            } finally {
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
-            }
+            } finally { reset(); }
         };
-        
         reader.readAsArrayBuffer(excelFile);
-    });
+
+        function reset(){ submitBtn.textContent = originalText; submitBtn.disabled = false; }
+        return false;
+    }
+    uploadForm.addEventListener('submit', handleExcelUpload);
+    const uploadSubmitBtn = document.getElementById('uploadSubmit');
+    if (uploadSubmitBtn) uploadSubmitBtn.addEventListener('click', handleExcelUpload);
     
     // Secrets form submission
     secretsForm.addEventListener('submit', function(e) {
