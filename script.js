@@ -602,4 +602,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-});
