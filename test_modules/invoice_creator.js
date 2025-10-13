@@ -115,12 +115,21 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfFilesOrK
         console.log(`    ✅ Invoice created: ${response.data._id}`);
         console.log(`    📋 Invoice response:`, JSON.stringify(response.data, null, 2));
         
-        // 5. Verify invoice was created properly by fetching it
+        // 5. Ensure files are attached (some environments ignore files on create)
         try {
-            const verifyResponse = await auth.makeAuthenticatedRequest('GET', `/api/transaction/${response.data._id}`, null, true);
-            console.log(`    ✅ Invoice verification:`, JSON.stringify(verifyResponse.data, null, 2));
-        } catch (verifyError) {
-            console.log(`    ⚠️ Could not verify invoice:`, verifyError.message);
+            if (files && files.length > 0) {
+                const current = await auth.makeAuthenticatedRequest('GET', `/api/transaction/${response.data._id}`, null, true);
+                const already = Array.isArray(current.data.files) ? current.data.files.length : 0;
+                if (already === 0) {
+                    console.log('    📎 No files present after create. Attempting to attach files via update...');
+                    // Attempt PATCH to add files
+                    const updatePayload = { files };
+                    const updateRes = await auth.makeAuthenticatedRequest('PATCH', `/api/transaction/${response.data._id}`, updatePayload, true);
+                    console.log('    📎 Attach via PATCH response:', JSON.stringify(updateRes.data, null, 2).substring(0, 300));
+                }
+            }
+        } catch (attachErr) {
+            console.log('    ⚠️ File attach attempt failed:', attachErr.response?.data?.message || attachErr.message);
         }
         
         return response.data;
