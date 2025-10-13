@@ -634,18 +634,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         resultsContainer.style.display = 'block';
 
-        // Enable Step 3 only when uploads exist
-        const hasUploads = (results || []).some(r => (r.awsObjectKeys && r.awsObjectKeys.length) || (r.awsDocuments && r.awsDocuments.length));
-        housemonkBtn.disabled = !hasUploads;
-        console.log('🔍 Button 3 enable check:', { 
-            totalResults: results.length, 
-            hasUploads, 
-            sample: results.slice(0, 2).map(r => ({ 
-                property: r.property, 
-                awsObjectKeys: r.awsObjectKeys?.length || 0, 
-                awsDocuments: r.awsDocuments?.length || 0 
-            })) 
-        });
+        // Button 3 is always available - no need to check AWS data
     }
     
     function showMessage(text, type) {
