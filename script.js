@@ -631,6 +631,70 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
         resultsList.appendChild(housemonkBtn);
+
+        // New: End-to-End Button (Button 2+3 combined)
+        const endToEndBtn = document.createElement('button');
+        endToEndBtn.className = 'submit-btn';
+        endToEndBtn.style.marginTop = '10px';
+        endToEndBtn.style.backgroundColor = '#d97706';
+        endToEndBtn.textContent = '⚡ Step 2 (Fast): Download + Create Invoices (End-to-End)';
+        endToEndBtn.onclick = async () => {
+            try {
+                showProcessingModal('End-to-End: Download → Upload → Create Invoices');
+                addLogEntry('Starting end-to-end run...', 'info');
+
+                // Open SSE for logs
+                try {
+                    if (window._sse) { try { window._sse.close(); } catch(_) {} }
+                    window._sse = new EventSource('/api/process-properties-stream');
+                    window._sse.onmessage = (e) => {
+                        try {
+                            const data = JSON.parse(e.data);
+                            if (data.type === 'log') addLogEntry(data.message, data.level || 'info');
+                            if (data.type === 'progress') updateProgress(data.percentage || 0);
+                            if (data.type === 'error') addLogEntry(`Server Error: ${data.message}`, 'error');
+                        } catch(_) {}
+                    };
+                } catch(_) {}
+
+                // Filter by selection if any
+                const filtered = (window._selectedProperties && window._selectedProperties.size)
+                    ? results.filter(r => window._selectedProperties.has(r.property))
+                    : results;
+
+                // Call end-to-end endpoint
+                const response = await fetch('/api/run-overuse-end-to-end', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ results: filtered })
+                });
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    addLogEntry(`❌ End-to-end failed: ${data.message || response.statusText}`, 'error');
+                } else {
+                    addLogEntry(`✅ End-to-end completed: ${data.successCount} successful, ${data.failedCount} failed`, 'success');
+                    if (Array.isArray(data.items)) {
+                        addLogEntry('🔗 Created Invoices:', 'info');
+                        data.items.forEach((item, i) => {
+                            if (item.status === 'success') {
+                                addLogEntry(`  ${i+1}. ${item.property}: ${item.invoiceUrl}`, 'success');
+                            } else {
+                                addLogEntry(`  ${i+1}. ${item.property}: FAILED - ${item.error}`, 'error');
+                            }
+                        });
+                    }
+                }
+
+                closeModal.classList.remove('disabled');
+                modalOkBtn.style.display = 'block';
+            } catch (error) {
+                addLogEntry(`❌ End-to-end error: ${error.message}`, 'error');
+                closeModal.classList.remove('disabled');
+                modalOkBtn.style.display = 'block';
+            }
+        };
+        resultsList.appendChild(endToEndBtn);
         
         resultsContainer.style.display = 'block';
 
