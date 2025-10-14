@@ -1428,6 +1428,124 @@ app.post('/api/housemonk/process-overuse', async (req, res) => {
 });
 
 
+// End-to-end: Download → Upload → Create Invoices (single run)
+app.post('/api/run-overuse-end-to-end', async (req, res) => {
+    try {
+        const { results } = req.body;
+        if (!results || !Array.isArray(results)) {
+            return res.status(400).json({ success: false, message: 'Invalid results data' });
+        }
+
+        // Filter properties with overuse > 0
+        const overuseProperties = results.filter(prop => prop.overuse_amount > 0);
+        if (overuseProperties.length === 0) {
+            return res.json({ success: true, message: 'No properties with overuse found', count: 0, items: [] });
+        }
+
+        sendEvent({ type: 'log', level: 'info', message: `🚀 End-to-end run for ${overuseProperties.length} properties` });
+
+        // Modules
+        const { downloadPdfsForPropertyWithContext, loginToPolaroo } = require('./test_modules/pdf_downloader');
+        const { uploadPdfAndMetadata } = require('./test_modules/aws_uploader');
+        const { HouseMonkAuth, HouseMonkIDResolver } = require('./test_modules/housemonk_auth');
+        const { createInvoiceForOveruse } = require('./test_modules/invoice_creator');
+
+        // Auth for HouseMonk
+        const hmAuth = new HouseMonkAuth();
+        await hmAuth.refreshMasterToken();
+        await hmAuth.getUserAccessToken(hmAuth.config.userId);
+        const resolver = new HouseMonkIDResolver(hmAuth);
+
+        // Shared browser for downloads
+        let browser, context;
+        try {
+            const session = await createBrowserSession();
+            browser = session.browser;
+            context = session.context;
+            sendEvent({ type: 'log', level: 'success', message: '✅ Browser ready for downloads' });
+        } catch (e) {
+            sendEvent({ type: 'log', level: 'error', message: `❌ Browser startup failed: ${e.message}` });
+            return res.status(500).json({ success: false, message: e.message });
+        }
+
+        // Login once
+        let loginPage = await context.newPage();
+        try {
+            await loginToPolaroo(loginPage, process.env.POLAROO_EMAIL, process.env.POLAROO_PASSWORD);
+            sendEvent({ type: 'log', level: 'success', message: '✅ Logged into Polaroo' });
+        } catch (e) {
+            await loginPage.close().catch(()=>{});
+            await cleanupBrowserSession(browser, context);
+            return res.status(500).json({ success: false, message: `Polaroo login failed: ${e.message}` });
+        }
+        await loginPage.close().catch(()=>{});
+
+        const items = [];
+
+        try {
+            for (let i = 0; i < overuseProperties.length; i++) {
+                const prop = overuseProperties[i];
+                const label = `${prop.property} (${i+1}/${overuseProperties.length})`;
+                sendEvent({ type: 'log', level: 'info', message: `🏠 ${label}` });
+
+                try {
+                    // 1) Download PDFs
+                    const pdfs = await downloadPdfsForPropertyWithContext(
+                        prop.property,
+                        prop.selected_bills || [],
+                        context,
+                        process.env.POLAROO_EMAIL,
+                        process.env.POLAROO_PASSWORD
+                    );
+
+                    if (!pdfs || pdfs.length === 0) {
+                        sendEvent({ type: 'log', level: 'warning', message: `⚠️ No PDFs downloaded for ${prop.property}` });
+                        throw new Error('No PDFs downloaded');
+                    }
+
+                    // 2) Upload PDFs to HouseMonk S3 via presign; collect full Document objects
+                    const pdfDocuments = [];
+                    for (const pdf of pdfs) {
+                        const { pdfDocument } = await uploadPdfAndMetadata(hmAuth, pdf.buffer, pdf.fileName, prop);
+                        if (pdfDocument) pdfDocuments.push(pdfDocument);
+                    }
+                    if (pdfDocuments.length === 0) throw new Error('Upload returned no documents');
+
+                    // 3) Create invoice in HouseMonk attaching only PDFs (skip JSON files in files array)
+                    const invoice = await createInvoiceForOveruse(hmAuth, resolver, prop, pdfDocuments, []);
+                    items.push({
+                        property: prop.property,
+                        status: 'success',
+                        invoiceId: invoice._id,
+                        invoiceUrl: `${hmAuth.config.baseUrl}/dashboard/transactions/${invoice._id}`,
+                        pdfCount: pdfDocuments.length,
+                        overuseAmount: prop.overuse_amount
+                    });
+                    sendEvent({ type: 'log', level: 'success', message: `✅ Created invoice ${invoice._id} for ${prop.property}` });
+
+                } catch (e) {
+                    items.push({ property: prop.property, status: 'failed', error: e.message });
+                    sendEvent({ type: 'log', level: 'error', message: `❌ ${prop.property}: ${e.message}` });
+                }
+
+                const progress = Math.round(((i + 1) / overuseProperties.length) * 100);
+                sendEvent({ type: 'progress', percentage: progress });
+            }
+        } finally {
+            await cleanupBrowserSession(browser, context);
+        }
+
+        const successCount = items.filter(x => x.status === 'success').length;
+        const failedCount = items.length - successCount;
+        return res.json({ success: true, message: 'End-to-end completed', successCount, failedCount, items });
+
+    } catch (error) {
+        console.error('❌ End-to-end failed:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`Visit: http://localhost:${PORT}`);
