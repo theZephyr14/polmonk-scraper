@@ -185,11 +185,38 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfFilesOrK
                 const current = await auth.makeAuthenticatedRequest('GET', `/api/transaction/${response.data._id}`, null, true);
                 const already = Array.isArray(current.data.files) ? current.data.files.length : 0;
                 if (already === 0) {
-                    console.log('    📎 No files present after create. Attaching via PUT...');
-                    const updatePayload = { files };
-                    // Use PUT (PATCH may not be supported on this env)
-                    const updateRes = await auth.makeAuthenticatedRequest('PUT', `/api/transaction/${response.data._id}`, updatePayload, true);
-                    console.log('    📎 Attach via PUT response (files length):', Array.isArray(updateRes.data?.files) ? updateRes.data.files.length : 'unknown');
+                    console.log('    📎 No files present after create. Attaching via PATCH...');
+                    const patchPayload = { files };
+                    try {
+                        const patchRes = await auth.makeAuthenticatedRequest('PATCH', `/api/transaction/${response.data._id}`, patchPayload, true);
+                        console.log('    📎 Attach via PATCH response (files length):', Array.isArray(patchRes.data?.files) ? patchRes.data.files.length : 'unknown');
+                    } catch (patchErr) {
+                        console.log('    ⚠️ PATCH failed, retrying with PUT and full minimal payload...');
+                        // Construct a minimal full payload for PUT using current transaction
+                        const t = current.data || {};
+                        const minimalPut = {
+                            type: t.type || 'Invoice',
+                            transactionBelongsTo: t.transactionBelongsTo || 'Home',
+                            home: t.home,
+                            project: t.project,
+                            listing: t.listing,
+                            status: t.status || 'due',
+                            invoiceDate: t.invoiceDate,
+                            dueDate: t.dueDate,
+                            taxable: t.taxable !== undefined ? t.taxable : true,
+                            totalAmount: t.totalAmount,
+                            openingBalance: t.openingBalance,
+                            currency: t.currency || 'EUR',
+                            paymentTerms: t.paymentTerms || '30',
+                            organization: t.organization,
+                            itemDetails: Array.isArray(t.itemDetails) ? t.itemDetails : [],
+                            files
+                        };
+                        // Remove undefined to avoid server-side field .map errors
+                        Object.keys(minimalPut).forEach(k => minimalPut[k] === undefined && delete minimalPut[k]);
+                        const putRes = await auth.makeAuthenticatedRequest('PUT', `/api/transaction/${response.data._id}`, minimalPut, true);
+                        console.log('    📎 Attach via PUT response (files length):', Array.isArray(putRes.data?.files) ? putRes.data.files.length : 'unknown');
+                    }
                 }
             }
         } catch (attachErr) {
