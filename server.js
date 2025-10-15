@@ -232,6 +232,18 @@ async function waitCloudflareIfPresent(page, timeoutMs = 30000) {
     } catch (_) {}
 }
 
+async function isLoggedIn(page) {
+    try {
+        const url = page.url?.() || '';
+        if (/\/dashboard\b/i.test(url)) return true;
+        // Heuristic: look for a common dashboard element
+        const hasDash = await page.locator('nav, [data-dashboard], [role="navigation"]').first().count().catch(()=>0);
+        return hasDash > 0;
+    } catch (_) {
+        return false;
+    }
+}
+
 // Try to find elements either on the main page or within any iframe
 async function queryInPageOrFrames(page, selectors) {
     // Main page first
@@ -1011,12 +1023,15 @@ app.post('/api/process-properties-batch', async (req, res) => {
                     await waitCloudflareIfPresent(loginPage);
                     await probePage(loginPage);
                     
-                    const filled = await fillLoginCredentials(loginPage, email, password);
-                    if (!filled) {
-                        throw new Error('Could not fill login credentials');
+                    // If we're already logged in (redirected), skip credential filling
+                    if (await isLoggedIn(loginPage)) {
+                        return; // success
                     }
                     
+                    // Ensure email login fields are visible before filling
                     await maybeRevealEmailLogin(loginPage);
+                    const filled = await fillLoginCredentials(loginPage, email, password);
+                    if (!filled) throw new Error('Could not fill login credentials');
                     await sleep(2000);
                     
                     const submitButton = await queryInPageOrFrames(loginPage, [
