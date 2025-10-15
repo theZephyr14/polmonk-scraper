@@ -265,6 +265,17 @@ async function queryInPageOrFrames(page, selectors) {
     return null;
 }
 
+// Properly parse European currency strings like "1.234,56 €" -> 1234.56
+function parseEuro(value) {
+    if (typeof value !== 'string') return Number(value) || 0;
+    const s = value
+        .replace(/[^0-9.,-]/g, '')
+        .replace(/\.(?=\d{3}(\D|$))/g, '') // remove thousand dots
+        .replace(',', '.'); // decimal comma -> dot
+    const n = Number(s);
+    return isNaN(n) ? 0 : n;
+}
+
 async function fillLoginCredentials(page, email, password) {
     // Prefer explicit Polaroo fields, with label/placeholder fallbacks (still precise to the form shown)
     const tryBuildLocators = (root) => ([
@@ -1188,7 +1199,10 @@ app.post('/api/process-properties-batch', async (req, res) => {
                         
                         const date = new Date(dateStr);
                         const month = date.getMonth() + 1;
-                        return targetMonths.includes(month);
+                        // Optionally restrict to current year to avoid previous years inflating totals
+                        const currentYear = new Date().getFullYear();
+                        const yearOk = date.getFullYear() === currentYear;
+                        return targetMonths.includes(month) && yearOk;
                     });
                     
                     // Separate electricity and water bills
@@ -1204,15 +1218,35 @@ app.post('/api/process-properties-batch', async (req, res) => {
                     });
                     
                     // Calculate costs
-                    const electricityCost = electricityBills.reduce((sum, bill) => {
-                        const total = parseFloat(bill.Total?.replace(/[€$,\s]/g, '') || '0');
-                        return sum + (isNaN(total) ? 0 : total);
-                    }, 0);
+                    // Constrain to one bill per month per service and correct euro parsing
+                    function monthKey(dateStr) {
+                        const d = new Date(dateStr);
+                        return isNaN(d) ? null : `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                    }
+
+                    function dedupeByMonth(bills) {
+                        const map = new Map();
+                        for (const b of bills) {
+                            const k = monthKey(b['Initial date'] || b['Final date']);
+                            if (!k) continue;
+                            // keep the latest row by Final date
+                            const cur = map.get(k);
+                            if (!cur) map.set(k, b);
+                            else {
+                                const curD = new Date(cur['Final date'] || cur['Initial date'] || 0);
+                                const newD = new Date(b['Final date'] || b['Initial date'] || 0);
+                                if (newD > curD) map.set(k, b);
+                            }
+                        }
+                        return Array.from(map.values());
+                    }
+
+                    const electricityMonthly = dedupeByMonth(electricityBills);
+                    const waterMonthly = dedupeByMonth(waterBills);
+
+                    const electricityCost = electricityMonthly.reduce((sum, bill) => sum + parseEuro(bill.Total || '0'), 0);
                     
-                    const waterCost = waterBills.reduce((sum, bill) => {
-                        const total = parseFloat(bill.Total?.replace(/[€$,\s]/g, '') || '0');
-                        return sum + (isNaN(total) ? 0 : total);
-                    }, 0);
+                    const waterCost = waterMonthly.reduce((sum, bill) => sum + parseEuro(bill.Total || '0'), 0);
                     
                     // Calculate overuse (simplified: assume 100€ per room per month is the limit)
                     const monthlyLimit = roomCount * 100;
@@ -1230,8 +1264,8 @@ app.post('/api/process-properties-batch', async (req, res) => {
                     const result = {
                         property: propertyName,
                         rooms: roomCount,
-                        electricity_bills: electricityBills.length,
-                        water_bills: waterBills.length,
+                        electricity_bills: electricityMonthly.length,
+                        water_bills: waterMonthly.length,
                         electricity_cost: electricityCost,
                         water_cost: waterCost,
                         overuse_amount: overuseAmount,

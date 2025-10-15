@@ -3,12 +3,41 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfFilesOrK
     console.log(`  📝 Creating invoice for ${propertyData.property}...`);
     
     try {
-        // 1. Resolve IDs from unit code
-        if (!propertyData.unitCode) {
-            throw new Error('Property missing unitCode - cannot resolve HouseMonk IDs');
+        // 1. Resolve IDs from unit code, with fallback by name if missing
+        let unitDetails;
+        if (propertyData.unitCode) {
+            unitDetails = await resolver.resolveFromUnitCode(propertyData.unitCode);
+        } else {
+            // Fallback: fuzzy match by property name
+            const name = propertyData.property || '';
+            const homesRes = await auth.makeAuthenticatedRequest('GET', `/api/home?limit=25&search=${encodeURIComponent(name)}`, null, true);
+            const rows = homesRes.data?.rows || [];
+            const norm = (s)=> String(s||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'');
+            const score = (a,b)=>{
+                const A = new Set(norm(a).split(/\s+/).filter(Boolean));
+                const B = new Set(norm(b).split(/\s+/).filter(Boolean));
+                if(!A.size||!B.size) return 0; let inter=0; for(const t of A) if(B.has(t)) inter++; return inter/(A.size+B.size-inter);
+            };
+            let best = null;
+            for (const r of rows) {
+                const s = score(name, r.name || r.address || '');
+                if (!best || s > best.s) best = { r, s };
+            }
+            if (best && best.s >= 0.6) {
+                unitDetails = {
+                    unitCode: best.r._id,
+                    homeId: best.r._id,
+                    projectId: best.r.project,
+                    listingId: best.r.listing,
+                    tenantId: best.r.tenant?._id || best.r.tenant,
+                    propertyName: best.r.name || best.r.address,
+                    tenantName: best.r.tenant?.firstName ? `${best.r.tenant.firstName} ${best.r.tenant.lastName}` : 'Unknown'
+                };
+                console.log(`    ✅ Fallback matched by name '${name}' → ${unitDetails.homeId}`);
+            } else {
+                throw new Error('Property missing unitCode - cannot resolve HouseMonk IDs');
+            }
         }
-        
-        const unitDetails = await resolver.resolveFromUnitCode(propertyData.unitCode);
         console.log(`    ✅ Resolved unit: ${unitDetails.propertyName} (tenant: ${unitDetails.tenantName})`);
         
         // 2. Get products and tax codes for project

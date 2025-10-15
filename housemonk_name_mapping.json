@@ -1,0 +1,3824 @@
+[
+  {
+    "row": 3,
+    "property": "Aribau 1º 1ª",
+    "rooms": 1,
+    "providedUnitCode": "687519db8b627233fbe41a26",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 4,
+    "property": "Aribau 1º 2ª",
+    "rooms": 1,
+    "providedUnitCode": "687519db8b627233fbe41a38",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 5,
+    "property": "Aribau 2º 1º",
+    "rooms": 1,
+    "providedUnitCode": "687519db8b627233fbe41a2b",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 6,
+    "property": "Aribau 2º 2º",
+    "rooms": 3,
+    "providedUnitCode": "687519db8b627233fbe41a27",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 7,
+    "property": "Aribau 2º 3ª",
+    "rooms": 1,
+    "providedUnitCode": "687519db8b627233fbe41a34",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 8,
+    "property": "Aribau 126-128 3-1",
+    "rooms": 0,
+    "providedUnitCode": "687519db8b627233fbe41a30",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 9,
+    "property": "Aribau 3º 2ª",
+    "rooms": 3,
+    "providedUnitCode": "687519db8b627233fbe41a2e",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 10,
+    "property": "Aribau 4º 1ª",
+    "rooms": 3,
+    "providedUnitCode": "687519db8b627233fbe41a2c",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 11,
+    "property": "Aribau 4º 2ª",
+    "rooms": 3,
+    "providedUnitCode": "687519db8b627233fbe41a2c",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 12,
+    "property": "Aribau 4º 1ª B",
+    "rooms": 2,
+    "providedUnitCode": "687519db8b627233fbe41a28",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 14,
+    "property": "Bisbe Laguarda 14, Pral-2",
+    "rooms": 3,
+    "providedUnitCode": "688c84c4798c753ee73f3f49",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 15,
+    "property": "Bisbe Laguarda 14, 2-2",
+    "rooms": 3,
+    "providedUnitCode": "688c84f60d55203dc8793fde",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 17,
+    "property": "Blasco de Garay Pral 1ª",
+    "rooms": 3,
+    "providedUnitCode": "68752c54f04eb63473e7c7a1",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 18,
+    "property": "Blasco de Garay Pral 2ª",
+    "rooms": 3,
+    "providedUnitCode": "68752c54f04eb63473e7c7a4",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 19,
+    "property": "Blasco de Garay 1º 1ª",
+    "rooms": 3,
+    "providedUnitCode": "68752c54f04eb63473e7c7a6",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 20,
+    "property": "Blasco de Garay 1º-2",
+    "rooms": 2,
+    "providedUnitCode": "68752c54f04eb63473e7c7aa",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 21,
+    "property": "Blasco de Garay 2º 1ª",
+    "rooms": 3,
+    "providedUnitCode": "68752c54f04eb63473e7c7ad",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 22,
+    "property": "Blasco de Garay 2º 2ª",
+    "rooms": 3,
+    "providedUnitCode": "68752c54f04eb63473e7c7bd",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 23,
+    "property": "Blasco de Garay 3º 1ª",
+    "rooms": 3,
+    "providedUnitCode": "68752c54f04eb63473e7c7b9",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 24,
+    "property": "Blasco de Garay 3º 2ª",
+    "rooms": 3,
+    "providedUnitCode": "68752c54f04eb63473e7c7b6",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 25,
+    "property": "Blasco de Garay 4º 1ª",
+    "rooms": 3,
+    "providedUnitCode": "68752c54f04eb63473e7c7b2",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 26,
+    "property": "Blasco de Garay 5º 1ª",
+    "rooms": 1,
+    "providedUnitCode": "68752c54f04eb63473e7c7ae",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 28,
+    "property": "Comte Borrell Pral 1ª",
+    "rooms": 3,
+    "providedUnitCode": "687669d3b242f940e646339b",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 29,
+    "property": "Comte Borrell 5º 1ª",
+    "rooms": 1,
+    "providedUnitCode": "687669d3b242f940e64633c7",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 30,
+    "property": "Comte Borrell 5º 2ª",
+    "rooms": 1,
+    "providedUnitCode": "687669d3b242f940e64633cc",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 32,
+    "property": "Llull 250 Pral 3",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a12415036238d",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 33,
+    "property": "Llull 250 Pral 5",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a12415036238a",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 34,
+    "property": "Llull 250 1-1",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a124150362387",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 35,
+    "property": "Llull 250 1-3",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a124150362384",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 36,
+    "property": "Llull 250 1-4",
+    "rooms": 3,
+    "providedUnitCode": "68765b381c2a124150362381",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 37,
+    "property": "Llull 250 1-5",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a12415036237e",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 38,
+    "property": "Llull 250 1-6",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a124150362390",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 39,
+    "property": "Llull 250 2-3",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a12415036239a",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 40,
+    "property": "Llull 250 2-5",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a124150362396",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 41,
+    "property": "Llull 250 2-6",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a124150362393",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 42,
+    "property": "Llull 250 3-2",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a124150362398",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 43,
+    "property": "Llull 250 3-4",
+    "rooms": 3,
+    "providedUnitCode": "68765b381c2a124150362399",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 44,
+    "property": "Llull 250 3-5",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a12415036239c",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 45,
+    "property": "Llull 250 3-6",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a12415036239f",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 46,
+    "property": "Llull 250 4-3",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a1241503623a2",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 47,
+    "property": "Llull 250 4-5",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a1241503623a5",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 48,
+    "property": "Llull 250 5-1",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a1241503623a8",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 49,
+    "property": "Llull 250 5-2",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a1241503623aa",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 50,
+    "property": "Llull 250 5-3",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a1241503623a6",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 51,
+    "property": "Llull 250 5-4",
+    "rooms": 3,
+    "providedUnitCode": "68765b381c2a1241503623a5",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 52,
+    "property": "Llull 250 5-5",
+    "rooms": 2,
+    "providedUnitCode": "68765b381c2a124150362399",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 55,
+    "property": "Padilla Entl 1ª",
+    "rooms": 2,
+    "providedUnitCode": "68627692e9dc827f03be4049",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 56,
+    "property": "Padilla Entl 2ª",
+    "rooms": 2,
+    "providedUnitCode": "68627692e9dc827f03be404c",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 57,
+    "property": "Padilla Entl 4ª",
+    "rooms": 2,
+    "providedUnitCode": "68627692e9dc827f03be404e",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 58,
+    "property": "Padilla Pral 2ª",
+    "rooms": 2,
+    "providedUnitCode": "68627692e9dc827f03be4050",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 59,
+    "property": "Padilla Pral 3ª",
+    "rooms": 3,
+    "providedUnitCode": "68627692e9dc827f03be4053",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 60,
+    "property": "Padilla 1º 1ª",
+    "rooms": 3,
+    "providedUnitCode": "68627692e9dc827f03be405b",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 61,
+    "property": "Padilla 1º 2ª",
+    "rooms": 3,
+    "providedUnitCode": "68627692e9dc827f03be4069",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 62,
+    "property": "Padilla 1º 3ª",
+    "rooms": 3,
+    "providedUnitCode": "68627692e9dc827f03be4065",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 63,
+    "property": "Padilla 2º 1ª",
+    "rooms": 3,
+    "providedUnitCode": "68627692e9dc827f03be4062",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 64,
+    "property": "Padilla 2-2",
+    "rooms": 3,
+    "providedUnitCode": "68627692e9dc827f03be405f",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 65,
+    "property": "Padilla 2º 3ª",
+    "rooms": 3,
+    "providedUnitCode": "68627692e9dc827f03be405c",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 66,
+    "property": "Padilla 2 - 4",
+    "rooms": 3,
+    "providedUnitCode": "68627692e9dc827f03be4057",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 67,
+    "property": "Padilla 3º 2ª",
+    "rooms": 3,
+    "providedUnitCode": "68627692e9dc827f03be406a",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 68,
+    "property": "Padilla 3º 3ª",
+    "rooms": 3,
+    "providedUnitCode": "68627692e9dc827f03be4073",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 69,
+    "property": "Padilla 4º 2ª",
+    "rooms": 3,
+    "providedUnitCode": "68627692e9dc827f03be406e",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 70,
+    "property": "Padilla 4º 3ª",
+    "rooms": 3,
+    "providedUnitCode": "68627692e9dc827f03be407f",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 71,
+    "property": "Padilla 5º 1ª",
+    "rooms": 2,
+    "providedUnitCode": "68627692e9dc827f03be407c",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 72,
+    "property": "Padilla 5º 2ª",
+    "rooms": 2,
+    "providedUnitCode": "68627692e9dc827f03be4078",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 74,
+    "property": "Psg Sant Joan Entl 1ª",
+    "rooms": 4,
+    "providedUnitCode": "68768928e48f7e407fb26efe",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 75,
+    "property": "Psg Sant Joan Entl 2ª",
+    "rooms": 3,
+    "providedUnitCode": "68768928e48f7e407fb26f00",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 76,
+    "property": "Psg Sant Joan Pral 1ª",
+    "rooms": 4,
+    "providedUnitCode": "68768928e48f7e407fb26f02",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 77,
+    "property": "Psg Sant Joan Pral 2ª",
+    "rooms": 4,
+    "providedUnitCode": "68768928e48f7e407fb26f04",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 78,
+    "property": "Psg Sant Joan 1º 1ª",
+    "rooms": 4,
+    "providedUnitCode": "68768928e48f7e407fb26f06",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 79,
+    "property": "Pg Sant Joan 161 2-1",
+    "rooms": 4,
+    "providedUnitCode": "68768928e48f7e407fb26f08",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 80,
+    "property": "Pg Sant Joan 161 2-2",
+    "rooms": 4,
+    "providedUnitCode": "68768928e48f7e407fb26f0a",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 81,
+    "property": "Psg Sant Joan 3º 2ª",
+    "rooms": 4,
+    "providedUnitCode": "68768928e48f7e407fb26f0c",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 82,
+    "property": "Pg Sant Joan 4-1",
+    "rooms": 4,
+    "providedUnitCode": "68768928e48f7e407fb26f0e",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 83,
+    "property": "Psg Sant Joan 4º 2ª",
+    "rooms": 3,
+    "providedUnitCode": "68768928e48f7e407fb26f10",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 84,
+    "property": "Psg Sant Joan 5º 2ª",
+    "rooms": 4,
+    "providedUnitCode": "68768928e48f7e407fb26f12",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 87,
+    "property": "Providencia Bajs 2ª",
+    "rooms": 1,
+    "providedUnitCode": "687679b5edbd1041b92ce0bf",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 88,
+    "property": "Providencia Pral 2ª",
+    "rooms": 3,
+    "providedUnitCode": "687679b5edbd1041b92ce0c1",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 89,
+    "property": "Providencia 1º 1ª",
+    "rooms": 2,
+    "providedUnitCode": "687679b5edbd1041b92ce0be",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 90,
+    "property": "Providencia 1º 2ª",
+    "rooms": 3,
+    "providedUnitCode": "687679b5edbd1041b92ce0bd",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 91,
+    "property": "Providencia 2º 1ª",
+    "rooms": 2,
+    "providedUnitCode": "687679b5edbd1041b92ce0d9",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 92,
+    "property": "Providencia 2º 2ª",
+    "rooms": 2,
+    "providedUnitCode": "687679b5edbd1041b92ce0c3",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 93,
+    "property": "Providencia 3º 2ª",
+    "rooms": 2,
+    "providedUnitCode": "687679b5edbd1041b92ce0c7",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 94,
+    "property": "Providencia 4º 2ª",
+    "rooms": 3,
+    "providedUnitCode": "687679b5edbd1041b92ce0ca",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 96,
+    "property": "Sardenya 1º 2ª",
+    "rooms": 2,
+    "providedUnitCode": "687679b5edbd1041b92ce0cf",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 97,
+    "property": "Sardenya 2º 2ª",
+    "rooms": 2,
+    "providedUnitCode": "687679b5edbd1041b92ce0d2",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 98,
+    "property": "Sardenya 3º 2ª",
+    "rooms": 2,
+    "providedUnitCode": "687679b5edbd1041b92ce0d4",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 99,
+    "property": "Sardenya 4º 2ª",
+    "rooms": 2,
+    "providedUnitCode": "687679b5edbd1041b92ce0d7",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 100,
+    "property": "Sardenya 5º 2ª",
+    "rooms": 2,
+    "providedUnitCode": "687679b5edbd1041b92ce0d6",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 102,
+    "property": "Torrent Olla Pral 1ª",
+    "rooms": 3,
+    "providedUnitCode": "687535528b627233fbe4aaa6",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 103,
+    "property": "Torrent Olla 1º 1ª",
+    "rooms": 3,
+    "providedUnitCode": "687535528b627233fbe4aaa7",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 104,
+    "property": "Torrent Olla 1º 2ª",
+    "rooms": 4,
+    "providedUnitCode": "687535528b627233fbe4aaaf",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 105,
+    "property": "Torrent Olla 2º 1ª",
+    "rooms": 4,
+    "providedUnitCode": "687535528b627233fbe4aaaa",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 106,
+    "property": "Torrent Olla 2º 2ª",
+    "rooms": 3,
+    "providedUnitCode": "687535528b627233fbe4aab4",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 107,
+    "property": "Torrent Olla 3º 2ª",
+    "rooms": 4,
+    "providedUnitCode": "687535528b627233fbe4aab6",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 108,
+    "property": "Torrent Olla Ático",
+    "rooms": 1,
+    "providedUnitCode": "",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 110,
+    "property": "Valencia Pral 1ª",
+    "rooms": 3,
+    "providedUnitCode": "686b83ec890c990624e39a26",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 111,
+    "property": "Valencia 2º 1ª",
+    "rooms": 4,
+    "providedUnitCode": "686b878d890c990624e3c2ed",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "row": 112,
+    "property": "Valencia Ático",
+    "rooms": 1,
+    "providedUnitCode": "686b882cc7c40605e62c3cdb",
+    "matchedName": "Carabanchel Long Stays",
+    "homeId": "67c98e146f22e318a3ff4748",
+    "projectId": "",
+    "listingId": "",
+    "confidence": 0,
+    "accepted": false,
+    "candidates": [
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4748",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff4747",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474f",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474d",
+        "score": 0
+      },
+      {
+        "name": "Carabanchel Long Stays",
+        "homeId": "67c98e146f22e318a3ff474b",
+        "score": 0
+      }
+    ]
+  }
+]
