@@ -193,6 +193,19 @@ async function probeUrl(url, label, timeoutMs = 8000) {
     }
 }
 
+// Simple wrapper used by login flow to probe connectivity and log DOM state
+async function probePage(page) {
+    try {
+        // Network probes
+        await probeUrl('https://www.google.com', 'egress');
+        await probeUrl('https://app.polaroo.com', 'polaroo host');
+        // DOM probe
+        await debugLoginDom(page);
+    } catch (_) {
+        // Best-effort only
+    }
+}
+
 async function debugLoginDom(page) {
     try {
         const infos = [];
