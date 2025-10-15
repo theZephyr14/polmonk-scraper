@@ -59,19 +59,52 @@ async function downloadPdfsForPropertyWithContext(propertyName, selectedBills, c
                 const newPage = await newPagePromise;
                 console.log('📄 Adobe tab opened, waiting for PDF to load...');
                 
-                // Wait for PDF to load and get the content
-                await newPage.waitForLoadState('networkidle', { timeout: 15000 });
-                
-                // Get PDF content
-                const pdfBuffer = await newPage.pdf({ format: 'A4' });
-                
+                // Wait for PDF network response and fetch raw bytes
+                await newPage.waitForLoadState('networkidle', { timeout: 20000 });
+
+                let pdfBuffer = null;
+
+                try {
+                    const pdfResponse = await newPage.waitForResponse(resp => {
+                        const ct = resp.headers()['content-type'] || '';
+                        return ct.includes('application/pdf');
+                    }, { timeout: 10000 });
+                    try {
+                        pdfBuffer = await pdfResponse.body();
+                    } catch (_) { /* ignore */ }
+                } catch (_) { /* ignore */ }
+
+                // Fallback: try to read the src from an embed/iframe and download via Axios (with cookies)
+                if (!pdfBuffer || pdfBuffer.length < 1000) {
+                    try {
+                        const src = await newPage.evaluate(() => {
+                            const el = document.querySelector('embed[type="application/pdf"], iframe');
+                            return el ? (el.src || el.getAttribute('src')) : null;
+                        });
+                        if (src) {
+                            // Collect cookies to pass along
+                            const cookies = await newPage.context().cookies();
+                            const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+                            const resp = await axios.get(src, {
+                                responseType: 'arraybuffer',
+                                headers: { Cookie: cookieHeader }
+                            });
+                            pdfBuffer = Buffer.from(resp.data);
+                        }
+                    } catch (fallbackErr) {
+                        console.log('⚠️ Fallback PDF fetch failed:', fallbackErr.message);
+                    }
+                }
+
+                // As a last resort, avoid printing the web page to PDF (produces blank PDFs)
+
                 // DEBUG: Check PDF integrity
                 console.log(`🔍 DEBUG PDF ${i + 1}:`);
                 console.log(`  - Buffer length: ${pdfBuffer ? pdfBuffer.length : 'null'}`);
                 console.log(`  - Buffer type: ${typeof pdfBuffer}`);
                 console.log(`  - First 20 bytes: ${pdfBuffer ? Array.from(pdfBuffer.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' ') : 'null'}`);
                 console.log(`  - Is valid PDF header: ${pdfBuffer && pdfBuffer.length > 4 ? pdfBuffer.slice(0, 4).toString() === '%PDF' : false}`);
-                
+
                 if (pdfBuffer && pdfBuffer.length > 0) {
                     const fileName = `${sanitize(propertyName)}_invoice_${Date.now()}.pdf`;
                     pdfs.push({
