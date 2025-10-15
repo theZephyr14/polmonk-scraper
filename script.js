@@ -411,6 +411,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Batch processing function - processes 15 properties at a time
     async function processPropertiesBatch(properties, period, batchNumber = 1) {
         try {
+            // Ensure the log modal is visible for every batch
+            try { showProcessingModal(`Batch ${batchNumber} Processing`); } catch(_) {}
             const BATCH_SIZE = 15;
             const totalBatches = Math.ceil(properties.length / BATCH_SIZE);
             
@@ -483,16 +485,18 @@ document.addEventListener('DOMContentLoaded', function() {
             
             updateProgress(100);
             
-            // Show results
-            displayResults(data.results);
-            
-            // Save batch results to localStorage
+            // Save batch results to localStorage and show cumulative results
+            let combinedResults = [];
             try { 
                 const existingResults = JSON.parse(localStorage.getItem('polmonk:batchResults') || '[]');
                 existingResults.push(...data.results);
                 localStorage.setItem('polmonk:batchResults', JSON.stringify(existingResults));
                 localStorage.setItem('polmonk:lastProcessedPeriod', period);
-            } catch(_) {}
+                combinedResults = existingResults;
+            } catch(_) { combinedResults = data.results; }
+
+            // Show cumulative property overuse details (batches 1..N)
+            displayResults(combinedResults);
             
             // Check if there are more batches
             if (data.hasMoreBatches) {
@@ -505,13 +509,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 continueBtn.className = 'submit-btn';
                 continueBtn.style.marginTop = '10px';
                 continueBtn.style.backgroundColor = '#28a745';
-                continueBtn.textContent = `🔄 Continue Batch ${data.nextBatchNumber}`;
+                continueBtn.textContent = `🔄 Restart server and start Batch ${data.nextBatchNumber}`;
                 continueBtn.onclick = async () => {
                     continueBtn.disabled = true;
-                    continueBtn.textContent = '⏳ Waiting for server restart...';
-                    addLogEntry('⏳ Waiting for server restart...', 'info');
+                    continueBtn.textContent = '⏳ Restarting and starting next batch...';
+                    addLogEntry('⏳ Restarting server (simulated) and preparing next batch...', 'info');
+                    try { showProcessingModal(`Batch ${data.nextBatchNumber} Processing`); } catch(_) {}
                     
-                    // Wait a bit for server restart
+                    // Wait a bit for server restart (simulated)
                     setTimeout(async () => {
                         try {
                             addLogEntry('🔄 Starting next batch...', 'info');
@@ -519,7 +524,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         } catch (error) {
                             addLogEntry(`Error starting next batch: ${error.message}`, 'error');
                         }
-                    }, 10000); // Wait 10 seconds for server restart
+                    }, 8000); // 8 seconds simulated restart
                 };
                 
                 const resultsList = document.getElementById('resultsList');
@@ -603,184 +608,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add export button for HouseMonk testing (TEMPORARY)
         // Button 1 removed - not useful
         
-        // Button 2: Download PDFs and Upload to AWS
-        const pdfBtn = document.createElement('button');
-        pdfBtn.className = 'submit-btn';
-        pdfBtn.style.marginTop = '10px';
-        pdfBtn.style.backgroundColor = '#28a745';
-        pdfBtn.textContent = '📄 Step 1: Download PDFs & Upload to AWS';
-        pdfBtn.onclick = async () => {
-            try {
-                showProcessingModal('Download PDFs & Upload to AWS');
-                addLogEntry('Starting PDF download and AWS upload for overuse properties...', 'info');
-                addLogEntry('This may take 2-3 minutes per property...', 'info');
-                
-                 // Disable button during processing
-                 pdfBtn.disabled = true;
-                 pdfBtn.textContent = '⏳ Processing...';
-                 
-                 // Open SSE for Button 2 logs
-                 try {
-                     if (window._sse) { try { window._sse.close(); } catch(_) {} }
-                     window._sse = new EventSource('/api/process-properties-stream');
-                     window._sse.onmessage = (e) => {
-                         try {
-                             const data = JSON.parse(e.data);
-                             if (data.type === 'log') addLogEntry(data.message, data.level || 'info');
-                             if (data.type === 'progress') updateProgress(data.percentage || 0);
-                             if (data.type === 'error') addLogEntry(`Server Error: ${data.message}`, 'error');
-                         } catch(_) {}
-                     };
-                 } catch(_) {}
-                 
-                 // Filter to only previously selected properties if available
-                 const filtered = (window._selectedProperties && window._selectedProperties.size)
-                     ? results.filter(r => window._selectedProperties.has(r.property))
-                     : results;
-
-                 const response = await fetch('/api/process-overuse-pdfs', {
-                     method: 'POST',
-                     headers: {'Content-Type': 'application/json'},
-                     body: JSON.stringify({ results: filtered })
-                 });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    addLogEntry(`✅ Processing completed: ${data.message}`, 'success');
-                    
-                    // Update the results with AWS object keys and unitCode for Button 3
-                    if (data.properties) {
-                        console.log('🔄 Updating results with AWS data from Button 2...');
-                        console.log('📋 Button 2 response properties:', data.properties.map(p => ({ 
-                            property: p.property, 
-                            awsObjectKeys: p.awsObjectKeys?.length || 0,
-                            jsonObjectKeys: p.jsonObjectKeys?.length || 0
-                        })));
-                        console.log('📋 Current results before update:', results.map(r => ({ 
-                            property: r.property, 
-                            awsObjectKeys: r.awsObjectKeys?.length || 0,
-                            jsonObjectKeys: r.jsonObjectKeys?.length || 0
-                        })));
-                        
-                        data.properties.forEach(updatedProp => {
-                            const originalProp = results.find(r => r.property === updatedProp.property);
-                            if (originalProp) {
-                                originalProp.awsObjectKeys = updatedProp.awsObjectKeys || [];
-                                originalProp.jsonObjectKeys = updatedProp.jsonObjectKeys || [];
-                                originalProp.unitCode = updatedProp.unitCode || originalProp.unitCode || '';
-                                console.log(`✅ Updated ${updatedProp.property} with ${originalProp.awsObjectKeys.length} AWS keys`);
-                            } else {
-                                console.log(`❌ Could not find original property for: ${updatedProp.property}`);
-                            }
-                        });
-                        
-                        console.log('📋 Results after update:', results.map(r => ({ 
-                            property: r.property, 
-                            awsObjectKeys: r.awsObjectKeys?.length || 0,
-                            jsonObjectKeys: r.jsonObjectKeys?.length || 0
-                        })));
-                    }
-                    
-                    // Show detailed results
-                    let resultMessage = `✅ Processing completed!\n\n${data.message}\n\n`;
-                    if (data.properties) {
-                        resultMessage += 'Details:\n';
-                        data.properties.forEach(prop => {
-                            resultMessage += `• ${prop.property}: ${prop.status.toUpperCase()}\n`;
-                            if (prop.status === 'success') {
-                                resultMessage += `  - Downloaded: ${prop.pdfCount} PDFs\n`;
-                                resultMessage += `  - Uploaded to AWS: ${prop.uploadCount || 0} files\n`;
-                            } else {
-                                resultMessage += `  - Error: ${prop.message}\n`;
-                            }
-                        });
-                    }
-                    
-                     // Persist uploads for resume
-                     try { localStorage.setItem('polmonk:lastUploads', JSON.stringify(data.properties || [])); } catch(_) {}
-                     
-                     // Button 3 is always available - no need to check AWS data
-                     
-                     closeModal.classList.remove('disabled');
-                     modalOkBtn.style.display = 'block';
-                } else {
-                    addLogEntry(`❌ Processing failed: ${data.message}`, 'error');
-                    closeModal.classList.remove('disabled');
-                    modalOkBtn.style.display = 'block';
-                }
-            } catch (error) {
-                addLogEntry(`❌ Processing failed: ${error.message}`, 'error');
-                closeModal.classList.remove('disabled');
-                modalOkBtn.style.display = 'block';
-            } finally {
-                // Re-enable button
-                pdfBtn.disabled = false;
-                pdfBtn.textContent = '📄 Step 1: Download PDFs & Upload to AWS';
-            }
-        };
-        resultsList.appendChild(pdfBtn);
-        
-        // Button 3: Create HouseMonk Invoices
-        const housemonkBtn = document.createElement('button');
-        housemonkBtn.className = 'submit-btn';
-        housemonkBtn.style.marginTop = '10px';
-        housemonkBtn.style.backgroundColor = '#6f42c1';
-        housemonkBtn.textContent = '📝 Step 2: Create HouseMonk Invoices';
-        housemonkBtn.disabled = false;
-        housemonkBtn.onclick = async () => {
-            try {
-                showProcessingModal('Create HouseMonk Invoices');
-                addLogEntry('Starting HouseMonk invoice creation...', 'info');
-                addLogEntry('This will: Use AWS links → Create Invoices in HouseMonk', 'info');
-                
-                // Debug: Log what we're sending to Button 3
-                console.log('🔍 Sending to Button 3 (HouseMonk):');
-                console.log('📋 Results data:', results.map(r => ({ 
-                    property: r.property, 
-                    awsObjectKeys: r.awsObjectKeys?.length || 0,
-                    jsonObjectKeys: r.jsonObjectKeys?.length || 0,
-                    unitCode: r.unitCode
-                })));
-                
-                const response = await fetch('/api/housemonk/process-overuse', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ results })
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    addLogEntry(`✅ HouseMonk integration completed!`, 'success');
-                    addLogEntry(`📊 Results: ${data.successCount} successful, ${data.failedCount} failed`, 'info');
-                    
-                    // Show invoice links
-                    if (data.items && data.items.length > 0) {
-                        addLogEntry('🔗 Created Invoices:', 'info');
-                        data.items.forEach((item, i) => {
-                            if (item.status === 'success') {
-                                addLogEntry(`  ${i+1}. ${item.property}: ${item.invoiceUrl}`, 'success');
-                            } else {
-                                addLogEntry(`  ${i+1}. ${item.property}: FAILED - ${item.error}`, 'error');
-                            }
-                        });
-                    }
-                    
-                    try { localStorage.setItem('polmonk:lastInvoices', JSON.stringify(data.items || [])); } catch(_) {}
-                    closeModal.classList.remove('disabled');
-                    modalOkBtn.style.display = 'block';
-                } else {
-                    addLogEntry(`❌ HouseMonk integration failed: ${data.message}`, 'error');
-                    closeModal.classList.remove('disabled');
-                    modalOkBtn.style.display = 'block';
-                }
-            } catch (error) {
-                addLogEntry(`❌ HouseMonk integration failed: ${error.message}`, 'error');
-                closeModal.classList.remove('disabled');
-                modalOkBtn.style.display = 'block';
-            }
-        };
-        resultsList.appendChild(housemonkBtn);
+        // Old buttons removed: we now only expose the End-to-End action
 
         // New: End-to-End Button (Button 2+3 combined)
         const endToEndBtn = document.createElement('button');
