@@ -909,6 +909,378 @@ app.post('/api/process-properties', async (req, res) => {
     }
 });
 
+// Batch processing endpoint - processes 15 properties then restarts
+app.post('/api/process-properties-batch', async (req, res) => {
+    try {
+        const { properties, period, batchNumber = 1 } = req.body;
+        
+        if (!properties || !Array.isArray(properties) || properties.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Properties array is required'
+            });
+        }
+
+        // Read Polaroo credentials from environment (Fly.io secrets)
+        const email = process.env.POLAROO_EMAIL;
+        const password = process.env.POLAROO_PASSWORD;
+        if (!email || !password) {
+            return res.status(500).json({
+                success: false,
+                message: 'POLAROO_EMAIL and POLAROO_PASSWORD must be set as Fly secrets'
+            });
+        }
+
+        const BATCH_SIZE = 15;
+        const startIndex = (batchNumber - 1) * BATCH_SIZE;
+        const endIndex = Math.min(startIndex + BATCH_SIZE, properties.length);
+        const batchProperties = properties.slice(startIndex, endIndex);
+        const totalBatches = Math.ceil(properties.length / BATCH_SIZE);
+
+        console.log(`🚀 Starting batch ${batchNumber}/${totalBatches} - processing properties ${startIndex + 1}-${endIndex} of ${properties.length}`);
+        if (period) {
+            console.log(`📅 Period selected: ${period}`);
+        }
+        console.log(`ℹ️ Processing ${batchProperties.length} properties in this batch`);
+        sendEvent({ type: 'log', level: 'info', message: `ℹ️ Processing batch ${batchNumber}/${totalBatches} (${batchProperties.length} properties)` });
+        
+        // Determine target months from requested period (fallback to last 2 months if not provided)
+        let targetMonths;
+        if (period) {
+            const map = {
+                'Jan-Feb': [1, 2], 'Mar-Apr': [3, 4], 'May-Jun': [5, 6],
+                'Jul-Aug': [7, 8], 'Sep-Oct': [9, 10], 'Nov-Dec': [11, 12]
+            };
+            targetMonths = map[period] || map['Jul-Aug'];
+        } else {
+            const currentMonth = new Date().getMonth() + 1;
+            targetMonths = [];
+            for (let i = 1; i >= 0; i--) {
+                let m = currentMonth - i;
+                if (m <= 0) m += 12;
+                targetMonths.push(m);
+            }
+        }
+        
+        console.log(`📅 Processing months: ${targetMonths.join(', ')}`);
+        
+        const results = [];
+        const logs = [];
+        
+        // Create ONE browser session for all properties (optimized for paid Browserless)
+        let browser, context;
+        try {
+            console.log('🟡 Creating shared browser session for batch...');
+            const session = await createBrowserSession();
+            browser = session.browser;
+            context = session.context;
+            console.log('✅ Shared browser session created successfully');
+        } catch (error) {
+            console.error('❌ Failed to create shared browser session:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to create browser session',
+                error: error.message
+            });
+        }
+        
+        try {
+            // Login to Polaroo ONCE at the start (reuse for all properties)
+            let loginPage = await context.newPage();
+            try {
+                await withRetry(async (attempt) => {
+                    logs.push({ message: `🔑 Logging into Polaroo... (attempt ${attempt})`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: `🔑 Logging into Polaroo... (attempt ${attempt})` });
+                    
+                    await loginPage.goto('https://app.polaroo.com/login', { timeout: 60000, waitUntil: 'domcontentloaded' });
+                    await sleep(3000);
+                    
+                    await waitCloudflareIfPresent(loginPage);
+                    await probePage(loginPage);
+                    
+                    const filled = await fillLoginCredentials(loginPage, email, password);
+                    if (!filled) {
+                        throw new Error('Could not fill login credentials');
+                    }
+                    
+                    await maybeRevealEmailLogin(loginPage);
+                    await sleep(2000);
+                    
+                    const submitButton = await queryInPageOrFrames(loginPage, [
+                        'button[type="submit"]',
+                        'input[type="submit"]',
+                        'button:has-text("Sign in")',
+                        'button:has-text("Login")',
+                        'button:has-text("Log in")'
+                    ]);
+                    
+                    if (submitButton) {
+                        await submitButton.locator.click();
+                        await sleep(5000);
+                        await waitCloudflareIfPresent(loginPage);
+                    }
+                    
+                    await loginPage.waitForURL('**/dashboard**', { timeout: 30000 });
+                    logs.push({ message: '✅ Successfully logged into Polaroo!', level: 'success' });
+                    sendEvent({ type: 'log', level: 'success', message: '✅ Successfully logged into Polaroo!' });
+                }, 3, 2000, 'login');
+                
+                console.log('🍪 Login session established - will reuse for all properties');
+                logs.push({ message: '🍪 Login session established - will reuse for all properties', level: 'info' });
+                sendEvent({ type: 'log', level: 'info', message: '🍪 Login session established - will reuse for all properties' });
+                
+            } finally {
+                await loginPage.close();
+            }
+            
+            // Process each property in the batch
+            const total = batchProperties.length;
+            for (let i = 0; i < total; i++) {
+                // Add delay BEFORE processing each property (except first)
+                if (i > 0) {
+                    await sleep(25000 + Math.random() * 10000); // 25-35s random delay
+                }
+                
+                const property = batchProperties[i];
+                const propertyName = property.name || property; // Handle both old and new format
+                const roomCount = property.rooms || 0;
+                
+                // Update progress bar
+                const progressPercentage = Math.round(((i + 1) / total) * 100);
+                sendEvent({ type: 'progress', percentage: progressPercentage });
+                
+                logs.push({ message: `🏠 Processing property ${i + 1}/${total}: ${propertyName} (${roomCount} rooms)`, level: 'info' });
+                sendEvent({ type: 'log', level: 'info', message: `🏠 Processing property ${i + 1}/${total}: ${propertyName}` });
+                
+                let page;
+                
+                try {
+                    // Create new page for this property (reuse browser/context with existing login)
+                    page = await context.newPage();
+                    
+                    // Configure page
+                    await page.addInitScript(() => {
+                        Object.defineProperty(navigator, 'webdriver', { get: () => false });
+                        Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+                        Object.defineProperty(navigator, 'plugins', { get: () => [1,2,3,4,5] });
+                        window.chrome = { runtime: {} };
+                    });
+                    await page.setViewportSize?.({ width: 1366, height: 768 });
+                    page.setDefaultTimeout(15000);
+                    page.setDefaultNavigationTimeout(30000);
+            
+                    // Navigate to accounting dashboard
+                    logs.push({ message: `🔍 Navigating to accounting dashboard...`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: '🔍 Navigating to accounting dashboard...' });
+                    await withRetry(async () => {
+                        await page.goto('https://app.polaroo.com/dashboard/accounting', { timeout: 60000, waitUntil: 'domcontentloaded' });
+                        await sleep(8000); // Wait for table to load
+                    }, 2, 800, 'navigate-accounting');
+                    
+                    // Search for property
+                    logs.push({ message: `🔍 Searching for: ${propertyName}`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: `🔍 Searching for: ${propertyName}` });
+                    const searchInput = page.locator('input[placeholder*="search"], input[placeholder*="Search"]').first();
+                    if (await searchInput.count() > 0) {
+                        await searchInput.fill(propertyName);
+                        await page.keyboard.press('Enter');
+                        await sleep(8000); // Wait for table to load
+                    }
+                    
+                    // Wait for table to load
+                    logs.push({ message: `📊 Waiting for invoice table to load...`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: '📊 Waiting for invoice table to load...' });
+                    await page.waitForSelector('table, .table, [role="table"]', { timeout: 60000 });
+                    
+                    // Extract table data (only needed columns)
+                    logs.push({ message: `📊 Extracting invoice data...`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: '📊 Extracting invoice data...' });
+                    const tableData = await page.evaluate(() => {
+                        const tables = document.querySelectorAll('table, .table, [role="table"]');
+                        const data = [];
+                        
+                        for (const table of tables) {
+                            const rows = table.querySelectorAll('tr');
+                            const headers = [];
+                            
+                            if (rows.length > 0) {
+                                const headerRow = rows[0];
+                                const headerCells = headerRow.querySelectorAll('th, td');
+                                for (const cell of headerCells) {
+                                    headers.push(cell.textContent.trim());
+                                }
+                            }
+                            
+                            for (let i = 1; i < rows.length; i++) {
+                                const row = rows[i];
+                                const cells = row.querySelectorAll('td, th');
+                                const rowData = {};
+                                
+                                for (let j = 0; j < cells.length && j < headers.length; j++) {
+                                    const cellText = cells[j].textContent.trim();
+                                    const header = headers[j];
+                                    
+                                    // Only extract needed columns
+                                    if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes', 'Total'].includes(header)) {
+                                        rowData[header] = cellText;
+                                    }
+                                }
+                                
+                                if (Object.keys(rowData).length > 0) {
+                                    data.push(rowData);
+                                }
+                            }
+                        }
+                        
+                        return data;
+                    });
+                    
+                    logs.push({ message: `📋 Found ${tableData.length} total bills`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: `📋 Found ${tableData.length} total bills` });
+                    
+                    // Filter bills by target months and service type
+                    logs.push({ message: `🔍 Filtering bills by month and service...`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: '🔍 Filtering bills by month and service...' });
+                    
+                    const filteredBills = tableData.filter(bill => {
+                        const service = bill.Service?.toLowerCase() || '';
+                        const initialDate = bill['Initial date'] || '';
+                        const finalDate = bill['Final date'] || '';
+                        
+                        // Check if it's electricity or water
+                        const isUtility = service.includes('electricity') || service.includes('water') || 
+                                        service.includes('electric') || service.includes('agua') || 
+                                        service.includes('luz') || service.includes('electricidad');
+                        
+                        if (!isUtility) return false;
+                        
+                        // Check if date falls within target months
+                        const dateStr = initialDate || finalDate;
+                        if (!dateStr) return false;
+                        
+                        const date = new Date(dateStr);
+                        const month = date.getMonth() + 1;
+                        return targetMonths.includes(month);
+                    });
+                    
+                    // Separate electricity and water bills
+                    const electricityBills = filteredBills.filter(bill => {
+                        const service = bill.Service?.toLowerCase() || '';
+                        return service.includes('electricity') || service.includes('electric') || 
+                               service.includes('luz') || service.includes('electricidad');
+                    });
+                    
+                    const waterBills = filteredBills.filter(bill => {
+                        const service = bill.Service?.toLowerCase() || '';
+                        return service.includes('water') || service.includes('agua');
+                    });
+                    
+                    // Calculate costs
+                    const electricityCost = electricityBills.reduce((sum, bill) => {
+                        const total = parseFloat(bill.Total?.replace(/[€$,\s]/g, '') || '0');
+                        return sum + (isNaN(total) ? 0 : total);
+                    }, 0);
+                    
+                    const waterCost = waterBills.reduce((sum, bill) => {
+                        const total = parseFloat(bill.Total?.replace(/[€$,\s]/g, '') || '0');
+                        return sum + (isNaN(total) ? 0 : total);
+                    }, 0);
+                    
+                    // Calculate overuse (simplified: assume 100€ per room per month is the limit)
+                    const monthlyLimit = roomCount * 100;
+                    const totalCost = electricityCost + waterCost;
+                    const overuseAmount = Math.max(0, totalCost - monthlyLimit);
+                    
+                    // DEBUG: Log bill counts for data flow tracking
+                    console.log(`🔍 DEBUG Bill Counts for ${propertyName}:`);
+                    console.log(`  - electricity_bills: ${electricityBills.length}`);
+                    console.log(`  - water_bills: ${waterBills.length}`);
+                    console.log(`  - electricity_cost: ${electricityCost}`);
+                    console.log(`  - water_cost: ${waterCost}`);
+                    console.log(`  - overuse_amount: ${overuseAmount}`);
+                    
+                    const result = {
+                        property: propertyName,
+                        rooms: roomCount,
+                        electricity_bills: electricityBills.length,
+                        water_bills: waterBills.length,
+                        electricity_cost: electricityCost,
+                        water_cost: waterCost,
+                        overuse_amount: overuseAmount,
+                        success: true,
+                        message: `Processed ${filteredBills.length} bills (${electricityBills.length} electricity, ${waterBills.length} water)`
+                    };
+                    
+                    results.push(result);
+                    logs.push({ message: `✅ COMPLETED: ${propertyName}`, level: 'success' });
+                    sendEvent({ type: 'log', level: 'success', message: `✅ COMPLETED: ${propertyName}` });
+                    
+                } catch (error) {
+                    console.error(`❌ Error processing ${propertyName}:`, error);
+                    results.push({
+                        property: propertyName,
+                        rooms: roomCount,
+                        electricity_bills: 0,
+                        water_bills: 0,
+                        electricity_cost: 0,
+                        water_cost: 0,
+                        overuse_amount: 0,
+                        success: false,
+                        message: error.message
+                    });
+                    logs.push({ message: `❌ FAILED: ${propertyName} - ${error.message}`, level: 'error' });
+                    sendEvent({ type: 'log', level: 'error', message: `❌ FAILED: ${propertyName} - ${error.message}` });
+                } finally {
+                    if (page) {
+                        await page.close();
+                    }
+                }
+            }
+            
+        } finally {
+            if (browser) {
+                await browser.close();
+            }
+        }
+        
+        logs.push({ message: `🎉 Batch ${batchNumber} completed!`, level: 'success' });
+        
+        // Save batch results to file for persistence
+        const batchData = {
+            batchNumber,
+            totalBatches,
+            processedAt: new Date().toISOString(),
+            results,
+            logs
+        };
+        
+        fs.writeFileSync(`batch_${batchNumber}_results.json`, JSON.stringify(batchData, null, 2));
+        console.log(`💾 Saved batch ${batchNumber} results to batch_${batchNumber}_results.json`);
+        
+        res.json({
+            success: true,
+            batchNumber,
+            totalBatches,
+            results: results,
+            logs: logs,
+            totalProcessed: results.length,
+            successful: results.filter(r => r.success).length,
+            failed: results.filter(r => !r.success).length,
+            hasMoreBatches: batchNumber < totalBatches,
+            nextBatchNumber: batchNumber + 1,
+            restartRequired: true
+        });
+        
+    } catch (error) {
+        console.error('Batch processing error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Batch processing failed',
+            error: error.message
+        });
+    }
+});
+
 // Export overuse data for HouseMonk integration
 app.post('/api/export-test-data', (req, res) => {
     try {

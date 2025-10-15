@@ -274,9 +274,21 @@ document.addEventListener('DOMContentLoaded', function() {
             // persist selection for later steps (Button 2/3)
             window._selectedProperties = new Set(selectedProps.map(p => p.name));
             if (selectedProps.length === 0) { showMessage('Please select at least one property', 'error'); return; }
-            showProcessingModal('Processing Properties');
-            try { if (window._sse) { window._sse.close(); } } catch(_) {}
-            await processProperties(limit10 ? selectedProps.slice(0, 10) : selectedProps, period);
+            
+            const propsToProcess = limit10 ? selectedProps.slice(0, 10) : selectedProps;
+            
+            // Use batch processing for large property sets (>15 properties)
+            if (propsToProcess.length > 15) {
+                showProcessingModal('Batch Processing Properties');
+                addLogEntry(`Large property set detected (${propsToProcess.length} properties)`, 'info');
+                addLogEntry('Using batch processing to prevent server timeouts...', 'info');
+                try { if (window._sse) { window._sse.close(); } } catch(_) {}
+                await processPropertiesBatch(propsToProcess, period);
+            } else {
+                showProcessingModal('Processing Properties');
+                try { if (window._sse) { window._sse.close(); } } catch(_) {}
+                await processProperties(propsToProcess, period);
+            }
         });
     }
     
@@ -391,6 +403,144 @@ document.addEventListener('DOMContentLoaded', function() {
             
         } catch (error) {
             console.error('Processing error:', error);
+            addLogEntry(`Error: ${error.message}`, 'error');
+            updateProgress(0);
+        }
+    }
+
+    // Batch processing function - processes 15 properties at a time
+    async function processPropertiesBatch(properties, period, batchNumber = 1) {
+        try {
+            const BATCH_SIZE = 15;
+            const totalBatches = Math.ceil(properties.length / BATCH_SIZE);
+            
+            addLogEntry(`Starting batch processing: ${totalBatches} batches of up to ${BATCH_SIZE} properties each`, 'info');
+            addLogEntry(`Processing batch ${batchNumber}/${totalBatches}...`, 'info');
+            
+            // Show initial progress
+            updateProgress(10);
+            addLogEntry('Sending batch request to server...', 'info');
+            
+            // Open SSE first to receive live logs
+            try {
+                if (window._sse) { try { window._sse.close(); } catch(_) {} }
+                window._sse = new EventSource('/api/process-properties-stream');
+                window._sse.onmessage = (e) => {
+                    try {
+                        const data = JSON.parse(e.data);
+                        if (data.type === 'log') addLogEntry(data.message, data.level || 'info');
+                        if (data.type === 'progress') updateProgress(data.percentage || 0);
+                        if (data.type === 'error') addLogEntry(`Server Error: ${data.message}`, 'error');
+                    } catch(_) {}
+                };
+            } catch(_) {}
+
+            const response = await fetch('/api/process-properties-batch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    properties: properties,
+                    period,
+                    batchNumber
+                })
+            });
+            
+            if (!response.ok) {
+                let errText = response.statusText;
+                try {
+                    const errData = await response.json();
+                    if (errData && (errData.error || errData.message)) {
+                        errText = `${errData.error || errData.message}`;
+                    }
+                } catch(_) {}
+                addLogEntry(`Server returned error: ${errText}`, 'error');
+                throw new Error(`Batch processing failed: ${errText}`);
+            }
+            
+            updateProgress(30);
+            addLogEntry('Server is processing batch...', 'info');
+            addLogEntry('This may take several minutes...', 'info');
+            
+            const data = await response.json();
+            
+            if (!data.success) {
+                addLogEntry(`Server failure: ${data.message || 'Unknown error'}`, 'error');
+                throw new Error(data.message || 'Batch processing failed');
+            }
+            
+            updateProgress(80);
+            addLogEntry(`Batch ${batchNumber} completed!`, 'success');
+            addLogEntry(`Successfully processed: ${data.successful}/${data.totalProcessed} properties in this batch`, 'success');
+            
+            // Display all logs from server
+            if (data.logs && data.logs.length > 0) {
+                data.logs.forEach(log => {
+                    addLogEntry(log.message, log.level || 'info');
+                });
+            }
+            
+            updateProgress(100);
+            
+            // Show results
+            displayResults(data.results);
+            
+            // Save batch results to localStorage
+            try { 
+                const existingResults = JSON.parse(localStorage.getItem('polmonk:batchResults') || '[]');
+                existingResults.push(...data.results);
+                localStorage.setItem('polmonk:batchResults', JSON.stringify(existingResults));
+                localStorage.setItem('polmonk:lastProcessedPeriod', period);
+            } catch(_) {}
+            
+            // Check if there are more batches
+            if (data.hasMoreBatches) {
+                addLogEntry(`✅ Batch ${batchNumber} completed! ${data.totalBatches - batchNumber} batches remaining.`, 'success');
+                addLogEntry(`🔄 Server will restart for batch ${data.nextBatchNumber}...`, 'info');
+                addLogEntry(`⏳ Please wait for server restart, then click "Continue Next Batch"`, 'info');
+                
+                // Show continue button
+                const continueBtn = document.createElement('button');
+                continueBtn.className = 'submit-btn';
+                continueBtn.style.marginTop = '10px';
+                continueBtn.style.backgroundColor = '#28a745';
+                continueBtn.textContent = `🔄 Continue Batch ${data.nextBatchNumber}`;
+                continueBtn.onclick = async () => {
+                    continueBtn.disabled = true;
+                    continueBtn.textContent = '⏳ Waiting for server restart...';
+                    addLogEntry('⏳ Waiting for server restart...', 'info');
+                    
+                    // Wait a bit for server restart
+                    setTimeout(async () => {
+                        try {
+                            addLogEntry('🔄 Starting next batch...', 'info');
+                            await processPropertiesBatch(properties, period, data.nextBatchNumber);
+                        } catch (error) {
+                            addLogEntry(`Error starting next batch: ${error.message}`, 'error');
+                        }
+                    }, 10000); // Wait 10 seconds for server restart
+                };
+                
+                const resultsList = document.getElementById('resultsList');
+                resultsList.appendChild(continueBtn);
+            } else {
+                addLogEntry(`🎉 All batches completed! Processed ${properties.length} properties total.`, 'success');
+                
+                // Show final results
+                const allResults = JSON.parse(localStorage.getItem('polmonk:batchResults') || '[]');
+                displayResults(allResults);
+                
+                // Clear batch results
+                localStorage.removeItem('polmonk:batchResults');
+            }
+            
+            // Keep modal open with OK button
+            closeModal.classList.remove('disabled');
+            modalOkBtn.style.display = 'block';
+            
+        } catch (error) {
+            console.error('Batch processing error:', error);
             addLogEntry(`Error: ${error.message}`, 'error');
             updateProgress(0);
         }
