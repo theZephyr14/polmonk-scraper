@@ -164,12 +164,21 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfFilesOrK
                 taxCode: taxCode._id
             }],
             files,
-            notes: `Generated from Polaroo overuse analysis for ${propertyData.property}. Electricity bills: ${propertyData.electricity_bills_count || 0}, Water bills: ${propertyData.water_bills_count || 0}. Total overuse: ${propertyData.overuse_amount.toFixed(2)}€`
+            notes: `Generated from Polaroo overuse analysis for ${propertyData.property}. Electricity bills: ${propertyData.electricity_bills_count ?? propertyData.electricity_bills ?? 0}, Water bills: ${propertyData.water_bills_count ?? propertyData.water_bills ?? 0}. Total overuse: ${propertyData.overuse_amount.toFixed(2)}€`
         };
         
         // Remove undefined keys (e.g., users if no tenant)
         Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
 
+        // DEBUG: Log bill count data for invoice creation
+        console.log(`🔍 DEBUG Invoice Creation for ${propertyData.property}:`);
+        console.log(`  - electricity_bills_count: ${propertyData.electricity_bills_count}`);
+        console.log(`  - electricity_bills: ${propertyData.electricity_bills}`);
+        console.log(`  - water_bills_count: ${propertyData.water_bills_count}`);
+        console.log(`  - water_bills: ${propertyData.water_bills}`);
+        console.log(`  - overuse_amount: ${propertyData.overuse_amount}`);
+        console.log(`  - Files to attach: ${files.length}`);
+        
         console.log(`    📋 Invoice payload prepared (${propertyData.overuse_amount.toFixed(2)}€, ${files.length} files)`);
         console.log(`    📋 Full payload:`, JSON.stringify(payload, null, 2));
         

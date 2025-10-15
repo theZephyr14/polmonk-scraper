@@ -65,13 +65,20 @@ async function downloadPdfsForPropertyWithContext(propertyName, selectedBills, c
                 // Get PDF content
                 const pdfBuffer = await newPage.pdf({ format: 'A4' });
                 
+                // DEBUG: Check PDF integrity
+                console.log(`🔍 DEBUG PDF ${i + 1}:`);
+                console.log(`  - Buffer length: ${pdfBuffer ? pdfBuffer.length : 'null'}`);
+                console.log(`  - Buffer type: ${typeof pdfBuffer}`);
+                console.log(`  - First 20 bytes: ${pdfBuffer ? Array.from(pdfBuffer.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' ') : 'null'}`);
+                console.log(`  - Is valid PDF header: ${pdfBuffer && pdfBuffer.length > 4 ? pdfBuffer.slice(0, 4).toString() === '%PDF' : false}`);
+                
                 if (pdfBuffer && pdfBuffer.length > 0) {
                     const fileName = `${sanitize(propertyName)}_invoice_${Date.now()}.pdf`;
                     pdfs.push({
                         buffer: pdfBuffer,
                         fileName: fileName
                     });
-                    console.log(`✅ Downloaded: ${fileName}`);
+                    console.log(`✅ Downloaded: ${fileName} (${pdfBuffer.length} bytes)`);
                 } else {
                     console.log(`⚠️ No PDF content received for download ${i + 1}`);
                 }

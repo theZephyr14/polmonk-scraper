@@ -36,6 +36,15 @@ async function uploadPdfAndMetadata(auth, pdfBuffer, fileName, overuseData) {
     try {
         // 1. Upload the main file (PDF or JSON)
         const contentType = detectContentType(fileName);
+        
+        // DEBUG: Check PDF buffer before upload
+        console.log(`🔍 DEBUG AWS Upload for ${fileName}:`);
+        console.log(`  - Buffer length: ${pdfBuffer ? pdfBuffer.length : 'null'}`);
+        console.log(`  - Buffer type: ${typeof pdfBuffer}`);
+        console.log(`  - First 20 bytes: ${pdfBuffer ? Array.from(pdfBuffer.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' ') : 'null'}`);
+        console.log(`  - Is valid PDF header: ${pdfBuffer && pdfBuffer.length > 4 ? pdfBuffer.slice(0, 4).toString() === '%PDF' : false}`);
+        console.log(`  - Content type: ${contentType}`);
+        
         const mainPresigned = await getPresignedUrl(auth, fileName);
         await uploadToS3(mainPresigned.url, pdfBuffer, contentType);
         mainPresigned.status = mainPresigned.status || 'active';

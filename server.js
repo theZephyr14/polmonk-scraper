@@ -847,6 +847,14 @@ app.post('/api/process-properties', async (req, res) => {
                     unitCode: property.unitCode || ''
                     };
                     
+                    // DEBUG: Log bill counts for data flow tracking
+                    console.log(`🔍 DEBUG Bill Counts for ${propertyName}:`);
+                    console.log(`  - electricity_bills: ${electricityBills.length}`);
+                    console.log(`  - water_bills: ${waterBills.length}`);
+                    console.log(`  - electricity_cost: ${electricityCost}`);
+                    console.log(`  - water_cost: ${waterCost}`);
+                    console.log(`  - overuse_amount: ${overuseAmount}`);
+                    
                     results.push(result);
                 logs.push({ message: `✅ COMPLETED: ${propertyName} - ${electricityBills.length} elec + ${waterBills.length} water = ${overuseAmount.toFixed(2)} € overuse`, level: 'success' });
                     sendEvent({ type: 'log', level: 'success', message: `✅ COMPLETED: ${propertyName}` });
