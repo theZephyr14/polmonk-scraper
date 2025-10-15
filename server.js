@@ -1181,6 +1181,17 @@ app.post('/api/process-properties-batch', async (req, res) => {
                     logs.push({ message: `🔍 Filtering bills by month and service...`, level: 'info' });
                     sendEvent({ type: 'log', level: 'info', message: '🔍 Filtering bills by month and service...' });
                     
+                    function parsePolarooDate(s) {
+                        if (!s) return null;
+                        // Formats seen: dd/mm/yyyy, yyyy-mm-dd
+                        if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+                            const [dd, mm, yyyy] = s.split('/').map(Number);
+                            return new Date(yyyy, mm - 1, dd);
+                        }
+                        const d = new Date(s);
+                        return isNaN(d) ? null : d;
+                    }
+
                     const filteredBills = tableData.filter(bill => {
                         const service = bill.Service?.toLowerCase() || '';
                         const initialDate = bill['Initial date'] || '';
@@ -1197,7 +1208,8 @@ app.post('/api/process-properties-batch', async (req, res) => {
                         const dateStr = initialDate || finalDate;
                         if (!dateStr) return false;
                         
-                        const date = new Date(dateStr);
+                        const date = parsePolarooDate(dateStr);
+                        if (!date) return false;
                         const month = date.getMonth() + 1;
                         // Optionally restrict to current year to avoid previous years inflating totals
                         const currentYear = new Date().getFullYear();
