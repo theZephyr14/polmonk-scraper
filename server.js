@@ -511,6 +511,9 @@ app.get('/api/env-flags', (req, res) => {
 async function createBrowserSession() {
     let browser, context, page;
     
+    // Add small delay to avoid rapid reconnections
+    await sleep(2000 + Math.random() * 3000); // 2-5s random delay
+    
     try {
         console.log('🟡 Launching Playwright Chromium...');
         let remoteWs = process.env.BROWSER_WS_URL || process.env.BROWSERLESS_WS_URL;
@@ -534,12 +537,30 @@ async function createBrowserSession() {
                     ],
                     proxy: process.env.PROXY_URL ? { server: process.env.PROXY_URL } : undefined
                 });
-            } else {
-                if (!remoteWs) {
-                    throw new Error('BROWSER_WS_URL (Browserless) is not configured');
+        } else {
+            if (!remoteWs) {
+                throw new Error('BROWSER_WS_URL (Browserless) is not configured');
+            }
+            console.log('🌐 Connecting to remote browser over WebSocket…');
+            
+            // Retry with exponential backoff for 429 errors
+            let lastError;
+            for (let attempt = 1; attempt <= 5; attempt++) {
+                try {
+                    browser = await chromium.connectOverCDP(remoteWs);
+                    break;
+                } catch (error) {
+                    lastError = error;
+                    if (error.message.includes('429') && attempt < 5) {
+                        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 30000); // Max 30s
+                        console.log(`⚠️ Browserless 429 error, retrying in ${delay}ms (attempt ${attempt}/5)...`);
+                        await sleep(delay);
+                        continue;
+                    }
+                    throw error;
                 }
-                console.log('🌐 Connecting to remote browser over WebSocket…');
-                browser = await chromium.connectOverCDP(remoteWs);
+            }
+            if (!browser) throw lastError;
             context = await browser.newContext({
                                 userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
                                 locale: 'en-US',
