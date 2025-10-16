@@ -477,7 +477,11 @@ async function createBrowserSession() {
     
     try {
         console.log('🟡 Launching Playwright Chromium...');
-        const remoteWs = process.env.BROWSER_WS_URL || process.env.BROWSERLESS_WS_URL;
+        let remoteWs = process.env.BROWSER_WS_URL || process.env.BROWSERLESS_WS_URL;
+        if (remoteWs && !remoteWs.includes('timeout=')) {
+            const sep = remoteWs.includes('?') ? '&' : '?';
+            remoteWs = `${remoteWs}${sep}timeout=600000`;
+        }
         const forceLocal = String(process.env.FORCE_LOCAL_CHROMIUM || '').toLowerCase() === 'true';
         
             if (forceLocal) {
