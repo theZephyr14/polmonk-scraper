@@ -635,10 +635,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                 } catch(_) {}
 
-                // Filter by selection if any
+                // Use results from localStorage (from batch processing)
+                const results = JSON.parse(localStorage.getItem('polmonk:batchResults') || '[]');
                 const filtered = (window._selectedProperties && window._selectedProperties.size)
                     ? results.filter(r => window._selectedProperties.has(r.property))
                     : results;
+
+                addLogEntry(`Found ${filtered.length} properties to process`, 'info');
+                addLogEntry(`Properties with overuse: ${filtered.filter(r => r.overuse_amount > 0).length}`, 'info');
 
                 // Call end-to-end endpoint
                 const response = await fetch('/api/run-overuse-end-to-end', {

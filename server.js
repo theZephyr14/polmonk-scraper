@@ -1890,13 +1890,22 @@ app.post('/api/run-overuse-end-to-end', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid results data' });
         }
 
-        // Filter properties with overuse > 0
+        // Filter properties with overuse > 0, but also include properties with bills for debugging
         const overuseProperties = results.filter(prop => prop.overuse_amount > 0);
-        if (overuseProperties.length === 0) {
-            return res.json({ success: true, message: 'No properties with overuse found', count: 0, items: [] });
+        const propertiesWithBills = results.filter(prop => 
+            (prop.electricity_bills > 0 || prop.water_bills > 0) && prop.overuse_amount === 0
+        );
+        
+        console.log(`🔍 End-to-end debug: ${overuseProperties.length} with overuse, ${propertiesWithBills.length} with bills but no overuse`);
+        
+        if (overuseProperties.length === 0 && propertiesWithBills.length === 0) {
+            return res.json({ success: true, message: 'No properties with overuse or bills found', count: 0, items: [] });
         }
+        
+        // Use properties with overuse, or fall back to properties with bills for debugging
+        const propertiesToProcess = overuseProperties.length > 0 ? overuseProperties : propertiesWithBills;
 
-        sendEvent({ type: 'log', level: 'info', message: `🚀 End-to-end run for ${overuseProperties.length} properties` });
+        sendEvent({ type: 'log', level: 'info', message: `🚀 End-to-end run for ${propertiesToProcess.length} properties` });
 
         // Modules
         const { downloadPdfsForPropertyWithContext, loginToPolaroo } = require('./test_modules/pdf_downloader');
@@ -1937,9 +1946,9 @@ app.post('/api/run-overuse-end-to-end', async (req, res) => {
         const items = [];
 
         try {
-            for (let i = 0; i < overuseProperties.length; i++) {
-                const prop = overuseProperties[i];
-                const label = `${prop.property} (${i+1}/${overuseProperties.length})`;
+            for (let i = 0; i < propertiesToProcess.length; i++) {
+                const prop = propertiesToProcess[i];
+                const label = `${prop.property} (${i+1}/${propertiesToProcess.length})`;
                 sendEvent({ type: 'log', level: 'info', message: `🏠 ${label}` });
 
                 try {
@@ -1982,7 +1991,7 @@ app.post('/api/run-overuse-end-to-end', async (req, res) => {
                     sendEvent({ type: 'log', level: 'error', message: `❌ ${prop.property}: ${e.message}` });
                 }
 
-                const progress = Math.round(((i + 1) / overuseProperties.length) * 100);
+                const progress = Math.round(((i + 1) / propertiesToProcess.length) * 100);
                 sendEvent({ type: 'progress', percentage: progress });
             }
         } finally {
