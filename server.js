@@ -2006,17 +2006,29 @@ app.post('/api/run-overuse-end-to-end', async (req, res) => {
         await hmAuth.getUserAccessToken(hmAuth.config.userId);
         const resolver = new HouseMonkIDResolver(hmAuth);
 
-        // Shared browser for downloads
+        // Shared browser for downloads with retry
         let browser, context;
-        try {
-            const session = await createBrowserSession();
-            browser = session.browser;
-            context = session.context;
-            sendEvent({ type: 'log', level: 'success', message: '✅ Browser ready for downloads' });
-        } catch (e) {
-            sendEvent({ type: 'log', level: 'error', message: `❌ Browser startup failed: ${e.message}` });
-            return res.status(500).json({ success: false, message: e.message });
+        let lastError;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                const session = await createBrowserSession();
+                browser = session.browser;
+                context = session.context;
+                sendEvent({ type: 'log', level: 'success', message: '✅ Browser ready for downloads' });
+                break;
+            } catch (e) {
+                lastError = e;
+                if (e.message.includes('429') && attempt < 3) {
+                    const delay = 2000 * attempt; // 2s, 4s
+                    sendEvent({ type: 'log', level: 'warning', message: `⚠️ Browserless 429, retrying in ${delay}ms (attempt ${attempt}/3)...` });
+                    await sleep(delay);
+                    continue;
+                }
+                sendEvent({ type: 'log', level: 'error', message: `❌ Browser startup failed: ${e.message}` });
+                return res.status(500).json({ success: false, message: e.message });
+            }
         }
+        if (!browser) throw lastError;
 
         // Login once
         let loginPage = await context.newPage();
@@ -2038,7 +2050,13 @@ app.post('/api/run-overuse-end-to-end', async (req, res) => {
                 const label = `${prop.property} (${i+1}/${propertiesToProcess.length})`;
                 sendEvent({ type: 'log', level: 'info', message: `🏠 ${label}` });
 
-                try {
+                // Retry logic for browser session failures
+                let retryCount = 0;
+                const maxRetries = 1;
+                let success = false;
+                
+                while (retryCount <= maxRetries && !success) {
+                    try {
                     // 1) Download PDFs
                     const pdfs = await downloadPdfsForPropertyWithContext(
                         prop.property,
@@ -2071,11 +2089,37 @@ app.post('/api/run-overuse-end-to-end', async (req, res) => {
                         pdfCount: pdfDocuments.length,
                         overuseAmount: prop.overuse_amount
                     });
-                    sendEvent({ type: 'log', level: 'success', message: `✅ Created invoice ${invoice._id} for ${prop.property}` });
+                        sendEvent({ type: 'log', level: 'success', message: `✅ Created invoice ${invoice._id} for ${prop.property}` });
+                        success = true;
 
-                } catch (e) {
-                    items.push({ property: prop.property, status: 'failed', error: e.message });
-                    sendEvent({ type: 'log', level: 'error', message: `❌ ${prop.property}: ${e.message}` });
+                    } catch (e) {
+                        const isClosedErr = /Target page, context or browser has been closed|browserContext\.newPage/i.test(e.message || '');
+                        
+                        if (isClosedErr && retryCount < maxRetries) {
+                            retryCount++;
+                            sendEvent({ type: 'log', level: 'warning', message: `♻️ Browser closed, recreating session and retrying ${prop.property}...` });
+                            
+                            // Recreate browser session
+                            try { await cleanupBrowserSession(browser, context); } catch(_) {}
+                            const session = await createBrowserSession();
+                            browser = session.browser;
+                            context = session.context;
+                            
+                            // Re-login
+                            let relogin = await context.newPage();
+                            try {
+                                await performPolarooLogin(relogin, process.env.POLAROO_EMAIL, process.env.POLAROO_PASSWORD);
+                            } finally {
+                                await relogin.close().catch(() => {});
+                            }
+                            await sleep(3000);
+                            continue;
+                        }
+                        
+                        items.push({ property: prop.property, status: 'failed', error: e.message });
+                        sendEvent({ type: 'log', level: 'error', message: `❌ ${prop.property}: ${e.message}` });
+                        success = true; // Exit retry loop even on failure
+                    }
                 }
 
                 const progress = Math.round(((i + 1) / propertiesToProcess.length) * 100);
