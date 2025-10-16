@@ -948,7 +948,7 @@ app.post('/api/process-properties', async (req, res) => {
 // Batch processing endpoint - processes 15 properties then restarts
 app.post('/api/process-properties-batch', async (req, res) => {
     try {
-        const { properties, period, batchNumber = 1 } = req.body;
+        const { properties, period } = req.body;
         
         if (!properties || !Array.isArray(properties) || properties.length === 0) {
             return res.status(400).json({
@@ -967,18 +967,15 @@ app.post('/api/process-properties-batch', async (req, res) => {
             });
         }
 
-        const BATCH_SIZE = 15;
-        const startIndex = (batchNumber - 1) * BATCH_SIZE;
-        const endIndex = Math.min(startIndex + BATCH_SIZE, properties.length);
-        const batchProperties = properties.slice(startIndex, endIndex);
-        const totalBatches = Math.ceil(properties.length / BATCH_SIZE);
+        const batchProperties = properties;
+        const totalBatches = 1;
 
-        console.log(`🚀 Starting batch ${batchNumber}/${totalBatches} - processing properties ${startIndex + 1}-${endIndex} of ${properties.length}`);
+        console.log(`🚀 Starting full processing - ${batchProperties.length} properties`);
         if (period) {
             console.log(`📅 Period selected: ${period}`);
         }
-        console.log(`ℹ️ Processing ${batchProperties.length} properties in this batch`);
-        sendEvent({ type: 'log', level: 'info', message: `ℹ️ Processing batch ${batchNumber}/${totalBatches} (${batchProperties.length} properties)` });
+        console.log(`ℹ️ Processing ${batchProperties.length} properties`);
+        sendEvent({ type: 'log', level: 'info', message: `ℹ️ Processing ${batchProperties.length} properties` });
         
         // Determine target months from requested period (fallback to last 2 months if not provided)
         let targetMonths;
@@ -1317,32 +1314,30 @@ app.post('/api/process-properties-batch', async (req, res) => {
             }
         }
         
-        logs.push({ message: `🎉 Batch ${batchNumber} completed!`, level: 'success' });
+        logs.push({ message: `🎉 Processing completed!`, level: 'success' });
         
         // Save batch results to file for persistence
         const batchData = {
-            batchNumber,
-            totalBatches,
             processedAt: new Date().toISOString(),
             results,
             logs
         };
         
-        fs.writeFileSync(`batch_${batchNumber}_results.json`, JSON.stringify(batchData, null, 2));
-        console.log(`💾 Saved batch ${batchNumber} results to batch_${batchNumber}_results.json`);
+        fs.writeFileSync(`batch_results.json`, JSON.stringify(batchData, null, 2));
+        console.log(`💾 Saved results to batch_results.json`);
         
         res.json({
             success: true,
-            batchNumber,
-            totalBatches,
+            batchNumber: 1,
+            totalBatches: 1,
             results: results,
             logs: logs,
             totalProcessed: results.length,
             successful: results.filter(r => r.success).length,
             failed: results.filter(r => !r.success).length,
-            hasMoreBatches: batchNumber < totalBatches,
-            nextBatchNumber: batchNumber + 1,
-            restartRequired: true
+            hasMoreBatches: false,
+            nextBatchNumber: null,
+            restartRequired: false
         });
         
     } catch (error) {

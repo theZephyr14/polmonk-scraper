@@ -265,30 +265,20 @@ document.addEventListener('DOMContentLoaded', function() {
         // Enable process button
         processBtn.disabled = false;
 
-        // Override process handler to use selection
+        // Override process handler to use selection (single full run)
         processBtn.removeEventListener('click', defaultProcessClick);
         processBtn.addEventListener('click', async function() {
             const period = document.getElementById('monthPair')?.value || 'Jul-Aug';
             const limit10 = document.getElementById('limit10')?.checked || false;
             const selectedProps = properties.filter(p => selected.has(p.name));
-            // persist selection for later steps (Button 2/3)
             window._selectedProperties = new Set(selectedProps.map(p => p.name));
             if (selectedProps.length === 0) { showMessage('Please select at least one property', 'error'); return; }
-            
+
             const propsToProcess = limit10 ? selectedProps.slice(0, 10) : selectedProps;
-            
-            // Use batch processing for large property sets (>15 properties)
-            if (propsToProcess.length > 15) {
-                showProcessingModal('Batch Processing Properties');
-                addLogEntry(`Large property set detected (${propsToProcess.length} properties)`, 'info');
-                addLogEntry('Using batch processing to prevent server timeouts...', 'info');
-                try { if (window._sse) { window._sse.close(); } } catch(_) {}
-                await processPropertiesBatch(propsToProcess, period);
-            } else {
-                showProcessingModal('Processing Properties');
-                try { if (window._sse) { window._sse.close(); } } catch(_) {}
-                await processProperties(propsToProcess, period);
-            }
+
+            showProcessingModal('Processing Properties');
+            try { if (window._sse) { window._sse.close(); } } catch(_) {}
+            await processProperties(propsToProcess, period);
         });
     }
     
@@ -408,7 +398,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Batch processing function - processes 15 properties at a time
+    // Batch processing (disabled) - kept for reference but not used now
     async function processPropertiesBatch(properties, period, batchNumber = 1) {
         try {
             // Ensure the log modal is visible for every batch
@@ -437,15 +427,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             } catch(_) {}
 
-            const response = await fetch('/api/process-properties-batch', {
+            const response = await fetch('/api/process-properties', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     properties: properties,
-                    period,
-                    batchNumber
+                    period
                 })
             });
             
@@ -473,8 +462,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             updateProgress(80);
-            addLogEntry(`Batch ${batchNumber} completed!`, 'success');
-            addLogEntry(`Successfully processed: ${data.successful}/${data.totalProcessed} properties in this batch`, 'success');
+            addLogEntry(`Processing completed!`, 'success');
+            addLogEntry(`Successfully processed: ${data.successful}/${data.totalProcessed} properties`, 'success');
             
             // Display all logs from server
             if (data.logs && data.logs.length > 0) {
@@ -485,60 +474,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             updateProgress(100);
             
-            // Save batch results to localStorage and show cumulative results
-            let combinedResults = [];
-            try { 
-                const existingResults = JSON.parse(localStorage.getItem('polmonk:batchResults') || '[]');
-                existingResults.push(...data.results);
-                localStorage.setItem('polmonk:batchResults', JSON.stringify(existingResults));
+            // Show results
+            displayResults(data.results);
+            try {
+                localStorage.setItem('polmonk:lastResults', JSON.stringify(data.results));
                 localStorage.setItem('polmonk:lastProcessedPeriod', period);
-                combinedResults = existingResults;
-            } catch(_) { combinedResults = data.results; }
-
-            // Show cumulative property overuse details (batches 1..N)
-            displayResults(combinedResults);
-            
-            // Check if there are more batches
-            if (data.hasMoreBatches) {
-                addLogEntry(`✅ Batch ${batchNumber} completed! ${data.totalBatches - batchNumber} batches remaining.`, 'success');
-                addLogEntry(`🔄 Server will restart for batch ${data.nextBatchNumber}...`, 'info');
-                addLogEntry(`⏳ Please wait for server restart, then click "Continue Next Batch"`, 'info');
-                
-                // Show continue button
-                const continueBtn = document.createElement('button');
-                continueBtn.className = 'submit-btn';
-                continueBtn.style.marginTop = '10px';
-                continueBtn.style.backgroundColor = '#28a745';
-                continueBtn.textContent = `🔄 Restart server and start Batch ${data.nextBatchNumber}`;
-                continueBtn.onclick = async () => {
-                    continueBtn.disabled = true;
-                    continueBtn.textContent = '⏳ Restarting and starting next batch...';
-                    addLogEntry('⏳ Restarting server (simulated) and preparing next batch...', 'info');
-                    try { showProcessingModal(`Batch ${data.nextBatchNumber} Processing`); } catch(_) {}
-                    
-                    // Wait a bit for server restart (simulated)
-                    setTimeout(async () => {
-                        try {
-                            addLogEntry('🔄 Starting next batch...', 'info');
-                            await processPropertiesBatch(properties, period, data.nextBatchNumber);
-                        } catch (error) {
-                            addLogEntry(`Error starting next batch: ${error.message}`, 'error');
-                        }
-                    }, 8000); // 8 seconds simulated restart
-                };
-                
-                const resultsList = document.getElementById('resultsList');
-                resultsList.appendChild(continueBtn);
-            } else {
-                addLogEntry(`🎉 All batches completed! Processed ${properties.length} properties total.`, 'success');
-                
-                // Show final results
-                const allResults = JSON.parse(localStorage.getItem('polmonk:batchResults') || '[]');
-                displayResults(allResults);
-                
-                // Clear batch results
-                localStorage.removeItem('polmonk:batchResults');
-            }
+            } catch(_) {}
             
             // Keep modal open with OK button
             closeModal.classList.remove('disabled');
@@ -610,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Old buttons removed: we now only expose the End-to-End action
 
-        // New: End-to-End Button (Button 2+3 combined)
+        // New: End-to-End Button (single full run based on last results)
         const endToEndBtn = document.createElement('button');
         endToEndBtn.className = 'submit-btn';
         endToEndBtn.style.marginTop = '10px';
@@ -635,8 +576,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                 } catch(_) {}
 
-                // Use results from localStorage (from batch processing)
-                const results = JSON.parse(localStorage.getItem('polmonk:batchResults') || '[]');
+                // Use results from last full run
+                const results = JSON.parse(localStorage.getItem('polmonk:lastResults') || '[]');
                 const filtered = (window._selectedProperties && window._selectedProperties.size)
                     ? results.filter(r => window._selectedProperties.has(r.property))
                     : results;
