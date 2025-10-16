@@ -603,6 +603,9 @@ function getMonthlyAllowance(propertyName, roomCount) {
 }
 
 // Process properties endpoint with Cohere API and allowance calculations
+// In-flight run control (very simple cooperative cancel)
+let CURRENT_RUN = null; // { cancelled: boolean }
+
 app.post('/api/process-properties', async (req, res) => {
     try {
         const { properties, period } = req.body;
@@ -634,6 +637,13 @@ app.post('/api/process-properties', async (req, res) => {
         }
         console.log('ℹ️ Processing all provided properties');
         sendEvent({ type: 'log', level: 'info', message: 'ℹ️ Processing all provided properties' });
+
+        // Setup cooperative cancel on client disconnect
+        CURRENT_RUN = { cancelled: false };
+        req.on('close', () => {
+            if (CURRENT_RUN) CURRENT_RUN.cancelled = true;
+            console.log('🛑 Client disconnected - cancelling current run');
+        });
         
         // Determine target months from requested period (fallback to last 2 months if not provided)
         let targetMonths;
@@ -738,6 +748,11 @@ app.post('/api/process-properties', async (req, res) => {
             const total = totalToProcess;
             const retried = new Set();
             for (let i = 0; i < total; i++) {
+                if (CURRENT_RUN?.cancelled) {
+                    logs.push({ message: '🛑 Run cancelled by client disconnect', level: 'warning' });
+                    sendEvent({ type: 'log', level: 'warning', message: '🛑 Run cancelled by client disconnect' });
+                    break;
+                }
                 
                 // Small delay between properties to smooth load
                 if (i > 0) await sleep(2000);
@@ -975,7 +990,9 @@ app.post('/api/process-properties', async (req, res) => {
             await cleanupBrowserSession(browser, context);
         }
         
-        logs.push({ message: '🎉 Processing completed!', level: 'success' });
+        if (!CURRENT_RUN?.cancelled) {
+            logs.push({ message: '🎉 Processing completed!', level: 'success' });
+        }
         
         res.json({
             success: true,
@@ -994,6 +1011,14 @@ app.post('/api/process-properties', async (req, res) => {
             error: error.message
         });
     }
+});
+
+// Manual cancel endpoint to stop current run
+app.post('/api/cancel-current-run', (req, res) => {
+    if (CURRENT_RUN) CURRENT_RUN.cancelled = true;
+    console.log('🛑 Cancel requested via API');
+    sendEvent({ type: 'log', level: 'warning', message: '🛑 Cancel requested - stopping as soon as safe' });
+    res.json({ success: true, message: 'Cancel requested' });
 });
 
 // Batch processing endpoint - processes 15 properties then restarts
