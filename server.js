@@ -736,12 +736,11 @@ app.post('/api/process-properties', async (req, res) => {
             // Process each property using the shared browser session (no re-login needed)
             // Honor client selection only: do not process any other properties
             const total = totalToProcess;
+            const retried = new Set();
             for (let i = 0; i < total; i++) {
                 
-                // Add delay BEFORE processing each property (except first)
-                if (i > 0) {
-                    await sleep(25000 + Math.random() * 10000); // 25-35s random delay
-                }
+                // Small delay between properties to smooth load
+                if (i > 0) await sleep(2000);
                 
                 const property = properties[i];
                 const propertyName = property.name || property; // Handle both old and new format
@@ -911,6 +910,33 @@ app.post('/api/process-properties', async (req, res) => {
                     results.push(result);
                     logs.push({ message: `❌ Failed to process ${propertyName}: ${error.message}`, level: 'error' });
                     sendEvent({ type: 'log', level: 'error', message: `❌ Failed: ${propertyName} - ${error.message}` });
+
+                    // Auto-recover if Browserless closed the page/context/browser
+                    const isClosedErr = /Target page, context or browser has been closed|browserContext\.newPage/i.test(error.message || '');
+                    if (isClosedErr && !retried.has(i)) {
+                        retried.add(i);
+                        logs.push({ message: '♻️ Session appears closed. Recreating browser context and retrying property once...', level: 'warning' });
+                        sendEvent({ type: 'log', level: 'warning', message: '♻️ Recreating browser and retrying current property once...' });
+                        try {
+                            await cleanupBrowserSession(browser, context);
+                        } catch(_) {}
+                        const session = await createBrowserSession();
+                        browser = session.browser;
+                        context = session.context;
+                        // Re-login
+                        let relogin = await context.newPage();
+                        try {
+                            await withRetry(async (attempt) => {
+                                logs.push({ message: `🔑 Re-logging into Polaroo... (attempt ${attempt})`, level: 'info' });
+                                await loginToPolaroo(relogin, email, password);
+                            }, 2, 1000, 'relogin');
+                        } finally {
+                            await relogin.close().catch(() => {});
+                        }
+                        // Retry current index
+                        i -= 1;
+                        continue;
+                    }
                 } finally {
                     // Close page after each property (but keep browser/context alive)
                     if (page) {
@@ -919,6 +945,27 @@ app.post('/api/process-properties', async (req, res) => {
                         } catch (closeError) {
                             console.log(`⚠️ Warning: Failed to close page for ${propertyName}:`, closeError.message);
                         }
+                    }
+                    // Recycle context periodically to avoid TTL/memory issues
+                    const processedCount = i + 1;
+                    if (processedCount % 10 === 0 && processedCount < total) {
+                        logs.push({ message: '♻️ Recycling browser context to keep session healthy...', level: 'info' });
+                        sendEvent({ type: 'log', level: 'info', message: '♻️ Recycling browser context...' });
+                        try { await context.close(); } catch(_) {}
+                        const session = await createBrowserSession();
+                        browser = session.browser;
+                        context = session.context;
+                        // Re-login after recycle
+                        let relogin2 = await context.newPage();
+                        try {
+                            await withRetry(async (attempt) => {
+                                logs.push({ message: `🔑 Re-logging into Polaroo after recycle... (attempt ${attempt})`, level: 'info' });
+                                await loginToPolaroo(relogin2, email, password);
+                            }, 2, 1000, 'relogin-after-recycle');
+                        } finally {
+                            await relogin2.close().catch(() => {});
+                        }
+                        await sleep(3000);
                     }
                 }
             }
