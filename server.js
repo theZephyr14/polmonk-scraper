@@ -674,12 +674,8 @@ app.post('/api/process-properties', async (req, res) => {
         console.log('ℹ️ Processing all provided properties');
         sendEvent({ type: 'log', level: 'info', message: 'ℹ️ Processing all provided properties' });
 
-        // Setup cooperative cancel on client disconnect
+        // Setup cooperative cancel (manual only, not on disconnect)
         CURRENT_RUN = { cancelled: false };
-        req.on('close', () => {
-            if (CURRENT_RUN) CURRENT_RUN.cancelled = true;
-            console.log('🛑 Client disconnected - cancelling current run');
-        });
         
         // Determine target months from requested period (fallback to last 2 months if not provided)
         let targetMonths;

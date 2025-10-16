@@ -186,11 +186,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     processBtn.addEventListener('click', defaultProcessClick);
     
-    // Modal close controls
+    // Modal close controls (acts as Cancel)
     closeModal.classList.add('disabled');
-    closeModal.addEventListener('click', function() {
+    closeModal.addEventListener('click', async function() {
         if (closeModal.classList.contains('disabled')) return;
-        processingModal.style.display = 'none';
+        try {
+            addLogEntry('🛑 Cancel requested...', 'warning');
+            try { if (window._sse) { window._sse.close(); } } catch(_) {}
+            await fetch('/api/cancel-current-run', { method: 'POST' }).catch(() => {});
+        } finally {
+            processingModal.style.display = 'none';
+            modalOkBtn.style.display = 'none';
+            closeModal.classList.add('disabled');
+        }
     });
     modalOkBtn.addEventListener('click', function() {
         processingModal.style.display = 'none';
@@ -288,7 +296,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('logContent').innerHTML = '';
         document.getElementById('progressFill').style.width = '0%';
         document.getElementById('progressText').textContent = '0%';
-        closeModal.classList.add('disabled');
+        // Allow cancel via close icon while running
+        closeModal.classList.remove('disabled');
         modalOkBtn.style.display = 'none';
     }
     
