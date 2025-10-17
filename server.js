@@ -720,7 +720,10 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
         warnings.push(`Multiple water bills found (${water.length})`);
     }
     
-    return { electricity, water, warnings, needsLLMFallback: warnings.length > 0 || electricity.length === 0 || water.length === 0 };
+    // Only trigger LLM fallback when NO electricity bills found (water bills can be missing)
+    const needsLLMFallback = electricity.length === 0;
+    
+    return { electricity, water, warnings, needsLLMFallback };
 }
 
 // LLM Fallback function for intelligent bill selection
