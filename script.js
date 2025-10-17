@@ -211,6 +211,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Property cohorts for bimonthly water billing
+    const PROPERTY_COHORTS = {
+        ODD: ['Aribau', 'Valencia', 'Borrell', 'Padilla', 'Providencia', 'Sardenya'],
+        EVEN: ['Llull', 'Blasco', 'Torrent']
+    };
+
+    // Determine cohort from month pair (second month determines cohort)
+    function getCohortForPeriod(targetMonths) {
+        const secondMonth = targetMonths[1];
+        // EVEN cohort: Oct(10), Dec(12), Feb(2), Apr(4), Jun(6), Aug(8)
+        const evenMonths = [10, 12, 2, 4, 6, 8];
+        return evenMonths.includes(secondMonth) ? 'EVEN' : 'ODD';
+    }
+
+    // Check if property belongs to cohort
+    function isPropertyInCohort(propertyName, cohort) {
+        const properties = PROPERTY_COHORTS[cohort] || [];
+        return properties.some(p => propertyName.toLowerCase().includes(p.toLowerCase()));
+    }
+
     function loadProperties() {
         if (!excelData || excelData.length === 0) {
             document.getElementById('propertiesList').innerHTML = '<p>No data available</p>';
@@ -221,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function() {
         propertiesList.innerHTML = '';
         
         // Get property names, room counts, and unit codes from first three columns
-        const properties = excelData
+        const allProperties = excelData
             .slice(1) // Remove header row
             .map(row => ({
                 name: row[0] ? row[0].toString().trim() : '',
@@ -230,9 +250,31 @@ document.addEventListener('DOMContentLoaded', function() {
             }))
             .filter(prop => prop.name !== ''); // Remove empty property names
         
-        if (properties.length === 0) {
+        if (allProperties.length === 0) {
             propertiesList.innerHTML = '<p>No property names found in the first column</p>';
             return;
+        }
+
+        // Filter properties by cohort based on selected period
+        const period = document.getElementById('monthPair')?.value || 'Jul-Aug';
+        const periodMap = {
+            'Jan-Feb': [1, 2], 'Feb-Mar': [2, 3], 'Mar-Apr': [3, 4],
+            'Apr-May': [4, 5], 'May-Jun': [5, 6], 'Jun-Jul': [6, 7],
+            'Jul-Aug': [7, 8], 'Aug-Sep': [8, 9], 'Sep-Oct': [9, 10],
+            'Oct-Nov': [10, 11], 'Nov-Dec': [11, 12], 'Dec-Jan': [12, 1]
+        };
+        const targetMonths = periodMap[period] || [7, 8];
+        const cohort = getCohortForPeriod(targetMonths);
+        
+        const properties = allProperties.filter(prop => isPropertyInCohort(prop.name, cohort));
+        const hiddenCount = allProperties.length - properties.length;
+        
+        // Show filtering note if properties were hidden
+        if (hiddenCount > 0) {
+            const noteDiv = document.createElement('div');
+            noteDiv.style.cssText = 'background: #e3f2fd; border: 1px solid #2196f3; border-radius: 4px; padding: 8px; margin-bottom: 12px; font-size: 14px; color: #1565c0;';
+            noteDiv.innerHTML = `ℹ️ ${hiddenCount} properties hidden - not in ${cohort} cohort for ${period} period`;
+            propertiesList.appendChild(noteDiv);
         }
         
         // Selection state
@@ -272,6 +314,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Enable process button
         processBtn.disabled = false;
+
+        // Re-filter properties when period changes
+        const monthPairSelect = document.getElementById('monthPair');
+        monthPairSelect.addEventListener('change', function() {
+            loadProperties(); // Re-run filtering
+        });
 
         // Override process handler to use selection (single full run)
         processBtn.removeEventListener('click', defaultProcessClick);
@@ -551,6 +599,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `}
             `;
+            
+            // Add warnings section if present
+            if (result.warnings && result.warnings.length > 0) {
+                const warningsDiv = document.createElement('div');
+                const isLLM = result.warnings.some(w => w.includes('LLM-assisted'));
+                const bgColor = isLLM ? '#e3f2fd' : '#fff3cd';
+                const borderColor = isLLM ? '#2196f3' : '#ffc107';
+                const textColor = isLLM ? '#1565c0' : '#856404';
+                const icon = isLLM ? '🤖' : '⚠️';
+                
+                warningsDiv.style.cssText = `grid-column: 1/-1; background: ${bgColor}; border-left: 3px solid ${borderColor}; padding: 8px; margin-top: 8px; border-radius: 4px;`;
+                warningsDiv.innerHTML = `
+                    <div style="font-weight: 600; color: ${textColor}; margin-bottom: 4px;">${icon} ${isLLM ? 'AI Analysis' : 'Validation Warnings'}:</div>
+                    ${result.warnings.map(w => `<div style="color: ${textColor}; font-size: 13px;">• ${w}</div>`).join('')}
+                `;
+                resultItem.appendChild(warningsDiv);
+            }
             
             resultsList.appendChild(resultItem);
         });

@@ -604,42 +604,230 @@ async function cleanupBrowserSession(browser, context) {
     }
 }
 
-// Helper function to filter bills: exactly 1 electricity per month, and 1 water for second month
-function filterBillsByMonth(tableData, targetMonths) {
-    // Normalize rows
+// Property cohorts for bimonthly water billing
+const PROPERTY_COHORTS = {
+    ODD: ['Aribau', 'Valencia', 'Borrell', 'Padilla', 'Providencia', 'Sardenya'],
+    EVEN: ['Llull', 'Blasco', 'Torrent']
+};
+
+// Determine cohort from month pair (second month determines cohort)
+function getCohortForPeriod(targetMonths) {
+    const secondMonth = targetMonths[1];
+    // EVEN cohort: Oct(10), Dec(12), Feb(2), Apr(4), Jun(6), Aug(8)
+    const evenMonths = [10, 12, 2, 4, 6, 8];
+    return evenMonths.includes(secondMonth) ? 'EVEN' : 'ODD';
+}
+
+// Check if property belongs to cohort
+function isPropertyInCohort(propertyName, cohort) {
+    const properties = PROPERTY_COHORTS[cohort] || [];
+    return properties.some(p => propertyName.toLowerCase().includes(p.toLowerCase()));
+}
+
+// Calculate billing month using spillover logic (cutoff = day 9)
+function calculateBillingMonth(dateStr) {
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return null;
+    
+    const day = parseInt(parts[0]);
+    const month = parseInt(parts[1]);
+    const year = parseInt(parts[2]);
+    
+    if (!Number.isFinite(day) || !Number.isFinite(month)) return null;
+    
+    // If day <= 9, billing month is previous month
+    if (day <= 9) {
+        const prevMonth = month === 1 ? 12 : month - 1;
+        return prevMonth;
+    }
+    return month;
+}
+
+// Helper function to filter bills: water-first approach, extract months from water bill dates
+function filterBillsByMonth(tableData, targetMonths, propertyName) {
+    const cohort = getCohortForPeriod(targetMonths);
+    const [firstMonth, secondMonth] = targetMonths;
+    
     const rows = [];
     for (const bill of tableData) {
         const fd = bill['Final date'] || '';
-        const parts = fd.split('/');
-        if (parts.length !== 3) continue;
-        const month = parseInt(parts[1]);
-        if (!Number.isFinite(month)) continue;
-
+        const id = bill['Initial date'] || '';
+        const billingMonth = calculateBillingMonth(fd);
+        if (!billingMonth) continue;
+        
         const service = (bill.Service || '').toLowerCase();
-        const total = parseFloat((bill.Total || '0').replace('€', '').replace(',', '.').trim()) || 0;
-
+        // Ignore gas bills entirely
+        if (service.includes('gas')) continue;
+        
         rows.push({
             raw: bill,
-            month,
+            billingMonth,
+            initialDate: id,
+            finalDate: fd,
             isElec: service.includes('electric'),
-            isWater: service.includes('water') || service.includes('agua'),
-            total
+            isWater: service.includes('water') || service.includes('agua')
         });
     }
-
-    // Electricity: pick exactly one per month (prefer the last occurrence)
-    const electricity = [];
-    for (const m of targetMonths) {
-        const candidates = rows.filter(r => r.isElec && r.month === m);
-        if (candidates.length > 0) electricity.push(candidates[candidates.length - 1].raw);
+    
+    const warnings = [];
+    
+    // Check cohort match for water
+    if (!isPropertyInCohort(propertyName, cohort)) {
+        warnings.push(`Property not in ${cohort} cohort for this period`);
     }
+    
+    // STEP 1: Find WATER bill first (second month, matching cohort)
+    let water = [];
+    let electricityMonths = targetMonths; // Default to selected months
+    
+    const waterCandidates = rows.filter(r => r.isWater && r.billingMonth === secondMonth);
+    if (waterCandidates.length > 0) {
+        const waterBill = waterCandidates[waterCandidates.length - 1];
+        water = [waterBill.raw];
+        
+        // STEP 2: Extract billing months from water bill's initial and final dates
+        const waterInitialMonth = calculateBillingMonth(waterBill.initialDate);
+        const waterFinalMonth = calculateBillingMonth(waterBill.finalDate);
+        
+        if (waterInitialMonth && waterFinalMonth) {
+            electricityMonths = [waterInitialMonth, waterFinalMonth];
+            console.log(`📅 Using water bill date range for electricity search: months ${waterInitialMonth}, ${waterFinalMonth}`);
+        }
+    } else {
+        warnings.push('Water bill missing - using selected period for electricity search');
+    }
+    
+    // STEP 3: Find ELECTRICITY bills based on water bill's date range
+    const electricity = [];
+    for (const targetMonth of electricityMonths) {
+        const candidates = rows.filter(r => r.isElec && r.billingMonth === targetMonth);
+        // Take latest if multiple found
+        if (candidates.length > 0) {
+            electricity.push(candidates[candidates.length - 1].raw);
+        }
+    }
+    
+    // Validation warnings
+    if (electricity.length < 2) {
+        warnings.push(`Only ${electricity.length}/2 electricity bills found`);
+    } else if (electricity.length > 2) {
+        warnings.push(`Extra electricity bills found (${electricity.length} instead of 2)`);
+    }
+    
+    if (water.length === 0) {
+        warnings.push('Water bill missing');
+    } else if (water.length > 1) {
+        warnings.push(`Multiple water bills found (${water.length})`);
+    }
+    
+    return { electricity, water, warnings, needsLLMFallback: warnings.length > 0 || electricity.length === 0 || water.length === 0 };
+}
 
-    // Water: pick only for second month
-    const secondMonth = targetMonths[1];
-    const waterCandidates = rows.filter(r => r.isWater && r.month === secondMonth);
-    const water = waterCandidates.length > 0 ? [waterCandidates[waterCandidates.length - 1].raw] : [];
+// LLM Fallback function for intelligent bill selection
+async function selectBillsWithLLM(tableData, targetMonths, propertyName, cohereApiKey) {
+    if (!cohereApiKey) {
+        console.log('⚠️ Cohere API key not available, skipping LLM fallback');
+        return null;
+    }
+    
+    try {
+        console.log(`🤖 Triggering LLM fallback for ${propertyName}...`);
+        
+        // Filter out gas bills and prepare bill list
+        const relevantBills = tableData.filter(bill => {
+            const service = (bill.Service || '').toLowerCase();
+            return !service.includes('gas');
+        }).map((bill, idx) => ({
+            index: idx,
+            service: bill.Service,
+            initialDate: bill['Initial date'],
+            finalDate: bill['Final date'],
+            total: bill.Total,
+            concept: bill.Concept || ''
+        }));
+        
+        if (relevantBills.length === 0) {
+            return null;
+        }
+        
+        const [month1, month2] = targetMonths;
+        const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const periodStr = `${monthNames[month1]}-${monthNames[month2]}`;
+        const cohort = getCohortForPeriod(targetMonths);
+        
+        const prompt = `You are analyzing utility bills for property "${propertyName}" for the billing period ${periodStr}.
 
-    return { electricity, water };
+Property belongs to ${cohort} cohort. We need to select:
+- 2 ELECTRICITY bills (one for each month in the period)
+- 1 WATER bill (covering the 2-month period)
+
+Rules:
+1. Bills have Initial Date and Final Date. The billing month is determined by Final Date, but if the day of Final Date is <= 9, the billing month is the PREVIOUS month.
+2. For water: find the bill whose billing month matches ${monthNames[month2]} (the second month).
+3. For electricity: once you find the water bill, use ITS initial and final dates to determine which months to look for electricity bills.
+4. Ignore any bills that don't make sense for this period.
+
+Available bills:
+${relevantBills.map(b => `[${b.index}] ${b.service} | ${b.initialDate} to ${b.finalDate} | ${b.total}`).join('\n')}
+
+Respond in JSON format:
+{
+  "waterBillIndex": <index or null>,
+  "electricityBillIndices": [<index1>, <index2>],
+  "reasoning": "<brief explanation of your selection>"
+}`;
+
+        const response = await fetch('https://api.cohere.ai/v1/chat', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${cohereApiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'command-r',
+                message: prompt,
+                temperature: 0.1,
+                response_format: { type: 'json_object' }
+            })
+        });
+        
+        if (!response.ok) {
+            console.error('❌ Cohere API error:', response.status);
+            return null;
+        }
+        
+        const data = await response.json();
+        const llmResponse = JSON.parse(data.text);
+        
+        console.log(`🤖 LLM reasoning: ${llmResponse.reasoning}`);
+        
+        // Extract selected bills
+        const selectedElectricity = [];
+        const selectedWater = [];
+        
+        if (llmResponse.electricityBillIndices && Array.isArray(llmResponse.electricityBillIndices)) {
+            for (const idx of llmResponse.electricityBillIndices) {
+                if (idx < tableData.length) {
+                    selectedElectricity.push(tableData[idx]);
+                }
+            }
+        }
+        
+        if (llmResponse.waterBillIndex !== null && llmResponse.waterBillIndex < tableData.length) {
+            selectedWater.push(tableData[llmResponse.waterBillIndex]);
+        }
+        
+        return {
+            electricity: selectedElectricity,
+            water: selectedWater,
+            warnings: [`LLM-assisted selection: ${llmResponse.reasoning}`],
+            llmUsed: true
+        };
+        
+    } catch (error) {
+        console.error('❌ LLM fallback failed:', error);
+        return null;
+    }
 }
 
 // Helper function to get monthly allowance based on property and room count
@@ -702,8 +890,10 @@ app.post('/api/process-properties', async (req, res) => {
         let targetMonths;
         if (period) {
             const map = {
-                'Jan-Feb': [1, 2], 'Mar-Apr': [3, 4], 'May-Jun': [5, 6],
-                'Jul-Aug': [7, 8], 'Sep-Oct': [9, 10], 'Nov-Dec': [11, 12]
+                'Jan-Feb': [1, 2], 'Feb-Mar': [2, 3], 'Mar-Apr': [3, 4],
+                'Apr-May': [4, 5], 'May-Jun': [5, 6], 'Jun-Jul': [6, 7],
+                'Jul-Aug': [7, 8], 'Aug-Sep': [8, 9], 'Sep-Oct': [9, 10],
+                'Oct-Nov': [10, 11], 'Nov-Dec': [11, 12], 'Dec-Jan': [12, 1]
             };
             targetMonths = map[period] || map['Jul-Aug'];
         } else {
@@ -874,9 +1064,29 @@ app.post('/api/process-properties', async (req, res) => {
                 logs.push({ message: `🔍 Filtering bills by month and service...`, level: 'info' });
                 sendEvent({ type: 'log', level: 'info', message: '🔍 Filtering bills by month and service...' });
                 
-                const filteredBills = filterBillsByMonth(tableData, targetMonths);
-                const electricityBills = filteredBills.electricity;
-                const waterBills = filteredBills.water;
+                let filteredBills = filterBillsByMonth(tableData, targetMonths, propertyName);
+                let electricityBills = filteredBills.electricity;
+                let waterBills = filteredBills.water;
+                let warnings = filteredBills.warnings || [];
+
+                // LLM Fallback: If rule-based logic produces warnings or finds 0 bills
+                if (filteredBills.needsLLMFallback) {
+                    logs.push({ message: `⚠️ Rule-based selection has issues, trying LLM fallback...`, level: 'warning' });
+                    sendEvent({ type: 'log', level: 'warning', message: '⚠️ Rule-based selection has issues, trying LLM fallback...' });
+                    
+                    const llmResult = await selectBillsWithLLM(tableData, targetMonths, propertyName, process.env.COHERE_API_KEY);
+                    
+                    if (llmResult && (llmResult.electricity.length > 0 || llmResult.water.length > 0)) {
+                        logs.push({ message: `🤖 LLM fallback successful!`, level: 'success' });
+                        sendEvent({ type: 'log', level: 'success', message: '🤖 LLM fallback successful!' });
+                        electricityBills = llmResult.electricity;
+                        waterBills = llmResult.water;
+                        warnings = llmResult.warnings;
+                    } else {
+                        logs.push({ message: `⚠️ LLM fallback unavailable, using rule-based results`, level: 'warning' });
+                        sendEvent({ type: 'log', level: 'warning', message: '⚠️ LLM fallback unavailable, using rule-based results' });
+                    }
+                }
                 
                 logs.push({ message: `⚡ Found ${electricityBills.length} electricity bills for selected months`, level: 'info' });
                 logs.push({ message: `💧 Found ${waterBills.length} water bills for selected months`, level: 'info' });
@@ -914,7 +1124,8 @@ app.post('/api/process-properties', async (req, res) => {
                     total_cost: totalCost,
                     overuse_amount: overuseAmount,
                     rooms: roomCount,
-                    unitCode: property.unitCode || ''
+                    unitCode: property.unitCode || '',
+                    warnings: warnings || []
                     };
                     
                     // DEBUG: Log bill counts for data flow tracking
@@ -1073,8 +1284,10 @@ app.post('/api/process-properties-batch', async (req, res) => {
         let targetMonths;
         if (period) {
             const map = {
-                'Jan-Feb': [1, 2], 'Mar-Apr': [3, 4], 'May-Jun': [5, 6],
-                'Jul-Aug': [7, 8], 'Sep-Oct': [9, 10], 'Nov-Dec': [11, 12]
+                'Jan-Feb': [1, 2], 'Feb-Mar': [2, 3], 'Mar-Apr': [3, 4],
+                'Apr-May': [4, 5], 'May-Jun': [5, 6], 'Jun-Jul': [6, 7],
+                'Jul-Aug': [7, 8], 'Aug-Sep': [8, 9], 'Sep-Oct': [9, 10],
+                'Oct-Nov': [10, 11], 'Nov-Dec': [11, 12], 'Dec-Jan': [12, 1]
             };
             targetMonths = map[period] || map['Jul-Aug'];
         } else {
@@ -1266,93 +1479,50 @@ app.post('/api/process-properties-batch', async (req, res) => {
                     logs.push({ message: `📋 Found ${tableData.length} total bills`, level: 'info' });
                     sendEvent({ type: 'log', level: 'info', message: `📋 Found ${tableData.length} total bills` });
                     
-                    // Filter bills by target months and service type
+                    // Filter bills by month and service type using new logic
                     logs.push({ message: `🔍 Filtering bills by month and service...`, level: 'info' });
                     sendEvent({ type: 'log', level: 'info', message: '🔍 Filtering bills by month and service...' });
                     
-                    function parsePolarooDate(s) {
-                        if (!s) return null;
-                        // Formats seen: dd/mm/yyyy, yyyy-mm-dd
-                        if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
-                            const [dd, mm, yyyy] = s.split('/').map(Number);
-                            return new Date(yyyy, mm - 1, dd);
+                    let filteredBills = filterBillsByMonth(tableData, targetMonths, propertyName);
+                    let electricityBills = filteredBills.electricity;
+                    let waterBills = filteredBills.water;
+                    let warnings = filteredBills.warnings || [];
+
+                    // LLM Fallback: If rule-based logic produces warnings or finds 0 bills
+                    if (filteredBills.needsLLMFallback) {
+                        logs.push({ message: `⚠️ Rule-based selection has issues, trying LLM fallback...`, level: 'warning' });
+                        sendEvent({ type: 'log', level: 'warning', message: '⚠️ Rule-based selection has issues, trying LLM fallback...' });
+                        
+                        const llmResult = await selectBillsWithLLM(tableData, targetMonths, propertyName, process.env.COHERE_API_KEY);
+                        
+                        if (llmResult && (llmResult.electricity.length > 0 || llmResult.water.length > 0)) {
+                            logs.push({ message: `🤖 LLM fallback successful!`, level: 'success' });
+                            sendEvent({ type: 'log', level: 'success', message: '🤖 LLM fallback successful!' });
+                            electricityBills = llmResult.electricity;
+                            waterBills = llmResult.water;
+                            warnings = llmResult.warnings;
+                        } else {
+                            logs.push({ message: `⚠️ LLM fallback unavailable, using rule-based results`, level: 'warning' });
+                            sendEvent({ type: 'log', level: 'warning', message: '⚠️ LLM fallback unavailable, using rule-based results' });
                         }
-                        const d = new Date(s);
-                        return isNaN(d) ? null : d;
                     }
-
-                    const filteredBills = tableData.filter(bill => {
-                        const service = bill.Service?.toLowerCase() || '';
-                        const initialDate = bill['Initial date'] || '';
-                        const finalDate = bill['Final date'] || '';
-                        
-                        // Check if it's electricity or water
-                        const isUtility = service.includes('electricity') || service.includes('water') || 
-                                        service.includes('electric') || service.includes('agua') || 
-                                        service.includes('luz') || service.includes('electricidad');
-                        
-                        if (!isUtility) return false;
-                        
-                        // Check if date falls within target months
-                        const dateStr = initialDate || finalDate;
-                        if (!dateStr) return false;
-                        
-                        const date = parsePolarooDate(dateStr);
-                        if (!date) return false;
-                        const month = date.getMonth() + 1;
-                        // Optionally restrict to current year to avoid previous years inflating totals
-                        const currentYear = new Date().getFullYear();
-                        const yearOk = date.getFullYear() === currentYear;
-                        return targetMonths.includes(month) && yearOk;
-                    });
                     
-                    // Separate electricity and water bills
-                    const electricityBills = filteredBills.filter(bill => {
-                        const service = bill.Service?.toLowerCase() || '';
-                        return service.includes('electricity') || service.includes('electric') || 
-                               service.includes('luz') || service.includes('electricidad');
-                    });
+                    // Calculate costs using the filtered bills
+                    const electricityCost = electricityBills.reduce((sum, bill) => {
+                        const total = parseEuro(bill.Total || '0');
+                        return sum + total;
+                    }, 0);
                     
-                    const waterBills = filteredBills.filter(bill => {
-                        const service = bill.Service?.toLowerCase() || '';
-                        return service.includes('water') || service.includes('agua');
-                    });
+                    const waterCost = waterBills.reduce((sum, bill) => {
+                        const total = parseEuro(bill.Total || '0');
+                        return sum + total;
+                    }, 0);
                     
-                    // Calculate costs
-                    // Constrain to one bill per month per service and correct euro parsing
-                    function monthKey(dateStr) {
-                        const d = new Date(dateStr);
-                        return isNaN(d) ? null : `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-                    }
-
-                    function dedupeByMonth(bills) {
-                        const map = new Map();
-                        for (const b of bills) {
-                            const k = monthKey(b['Initial date'] || b['Final date']);
-                            if (!k) continue;
-                            // keep the latest row by Final date
-                            const cur = map.get(k);
-                            if (!cur) map.set(k, b);
-                            else {
-                                const curD = new Date(cur['Final date'] || cur['Initial date'] || 0);
-                                const newD = new Date(b['Final date'] || b['Initial date'] || 0);
-                                if (newD > curD) map.set(k, b);
-                            }
-                        }
-                        return Array.from(map.values());
-                    }
-
-                    const electricityMonthly = dedupeByMonth(electricityBills);
-                    const waterMonthly = dedupeByMonth(waterBills);
-
-                    const electricityCost = electricityMonthly.reduce((sum, bill) => sum + parseEuro(bill.Total || '0'), 0);
-                    
-                    const waterCost = waterMonthly.reduce((sum, bill) => sum + parseEuro(bill.Total || '0'), 0);
-                    
-                    // Calculate overuse (simplified: assume 100€ per room per month is the limit)
-                    const monthlyLimit = roomCount * 100;
+                    // Calculate overuse using the same logic as main processing
+                    const monthlyAllowance = getMonthlyAllowance(propertyName, roomCount);
+                    const totalAllowance = monthlyAllowance * 2; // 2 months
                     const totalCost = electricityCost + waterCost;
-                    const overuseAmount = Math.max(0, totalCost - monthlyLimit);
+                    const overuseAmount = Math.max(0, totalCost - totalAllowance);
                     
                     // DEBUG: Log bill counts for data flow tracking
                     console.log(`🔍 DEBUG Bill Counts for ${propertyName}:`);
@@ -1365,13 +1535,14 @@ app.post('/api/process-properties-batch', async (req, res) => {
                     const result = {
                         property: propertyName,
                         rooms: roomCount,
-                        electricity_bills: electricityMonthly.length,
-                        water_bills: waterMonthly.length,
+                        electricity_bills: electricityBills.length,
+                        water_bills: waterBills.length,
                         electricity_cost: electricityCost,
                         water_cost: waterCost,
                         overuse_amount: overuseAmount,
                         success: true,
-                        message: `Processed ${filteredBills.length} bills (${electricityBills.length} electricity, ${waterBills.length} water)`
+                        warnings: warnings || [],
+                        message: `Processed ${electricityBills.length + waterBills.length} bills (${electricityBills.length} electricity, ${waterBills.length} water)`
                     };
                     
                     results.push(result);
