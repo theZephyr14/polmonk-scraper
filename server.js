@@ -511,8 +511,8 @@ app.get('/api/env-flags', (req, res) => {
 async function createBrowserSession() {
     let browser, context, page;
     
-    // Add small delay to avoid rapid reconnections
-    await sleep(2000 + Math.random() * 3000); // 2-5s random delay
+    // Add longer delay to avoid rate limiting
+    await sleep(5000 + Math.random() * 10000); // 5-15s random delay
     
     try {
         console.log('🟡 Launching Playwright Chromium...');
@@ -545,15 +545,15 @@ async function createBrowserSession() {
             
             // Retry with exponential backoff for 429 errors
             let lastError;
-            for (let attempt = 1; attempt <= 5; attempt++) {
+            for (let attempt = 1; attempt <= 8; attempt++) {
                 try {
                     browser = await chromium.connectOverCDP(remoteWs);
                     break;
                 } catch (error) {
                     lastError = error;
-                    if (error.message.includes('429') && attempt < 5) {
-                        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 30000); // Max 30s
-                        console.log(`⚠️ Browserless 429 error, retrying in ${delay}ms (attempt ${attempt}/5)...`);
+                    if (error.message.includes('429') && attempt < 8) {
+                        const delay = Math.min(2000 * Math.pow(2, attempt - 1), 60000); // Max 60s, start at 2s
+                        console.log(`⚠️ Browserless 429 error, retrying in ${delay}ms (attempt ${attempt}/8)...`);
                         await sleep(delay);
                         continue;
                     }
@@ -777,7 +777,7 @@ Respond in JSON format:
   "reasoning": "<brief explanation of your selection>"
 }`;
 
-        const response = await fetch('https://api.cohere.ai/v1/chat', {
+        const response = await fetch('https://api.cohere.ai/v1/generate', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${cohereApiKey}`,
@@ -785,9 +785,9 @@ Respond in JSON format:
             },
             body: JSON.stringify({
                 model: 'command-r',
-                message: prompt,
+                prompt: prompt,
                 temperature: 0.1,
-                response_format: { type: 'json_object' }
+                max_tokens: 1000
             })
         });
         
@@ -797,7 +797,7 @@ Respond in JSON format:
         }
         
         const data = await response.json();
-        const llmResponse = JSON.parse(data.text);
+        const llmResponse = JSON.parse(data.generations[0].text);
         
         console.log(`🤖 LLM reasoning: ${llmResponse.reasoning}`);
         
