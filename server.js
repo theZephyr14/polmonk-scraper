@@ -643,6 +643,101 @@ function calculateBillingMonth(dateStr) {
     return month;
 }
 
+// Calculate period coverage - how many days in each month a bill covers
+function calculatePeriodCoverage(startDateStr, endDateStr) {
+    const startDate = new Date(startDateStr.split('/').reverse().join('-'));
+    const endDate = new Date(endDateStr.split('/').reverse().join('-'));
+    
+    const coverage = {};
+    const current = new Date(startDate);
+    
+    while (current <= endDate) {
+        const monthKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+        coverage[monthKey] = (coverage[monthKey] || 0) + 1;
+        current.setDate(current.getDate() + 1);
+    }
+    
+    return coverage;
+}
+
+// Find the best electricity bill matches for a given water coverage pattern
+function findBestElectricityMatches(electricityCandidates, waterCoverage) {
+    // Get the months that water bill actually covers (with significant days)
+    const waterMonths = Object.entries(waterCoverage)
+        .filter(([month, days]) => days >= 15) // At least 15 days to be considered "covered"
+        .map(([month]) => month)
+        .sort();
+    
+    console.log(`📅 Water bill significantly covers months: ${waterMonths.join(', ')}`);
+    
+    if (waterMonths.length === 0) {
+        return electricityCandidates.slice(-2); // Fallback to latest 2
+    }
+    
+    // Calculate coverage for each electricity bill
+    const elecWithCoverage = electricityCandidates.map(bill => {
+        const coverage = calculatePeriodCoverage(bill.initialDate, bill.finalDate);
+        const elecMonths = Object.entries(coverage)
+            .filter(([month, days]) => days >= 15)
+            .map(([month]) => month)
+            .sort();
+        
+        return {
+            bill,
+            coverage: elecMonths,
+            score: calculateMatchScore(elecMonths, waterMonths)
+        };
+    });
+    
+    // Sort by match score (higher is better)
+    elecWithCoverage.sort((a, b) => b.score - a.score);
+    
+    // Take the 2 best matches
+    const bestMatches = elecWithCoverage.slice(0, 2).map(item => item.bill);
+    
+    console.log(`📅 Match scores: ${elecWithCoverage.map(item => `${item.bill.initialDate}-${item.bill.finalDate}: ${item.score.toFixed(2)}`).join(', ')}`);
+    
+    return bestMatches;
+}
+
+// Calculate how well electricity months match water months
+function calculateMatchScore(elecMonths, waterMonths) {
+    if (elecMonths.length === 0 || waterMonths.length === 0) return 0;
+    
+    // Perfect match gets highest score
+    if (elecMonths.length === waterMonths.length && 
+        elecMonths.every((month, i) => month === waterMonths[i])) {
+        return 100;
+    }
+    
+    // Calculate overlap
+    const overlap = elecMonths.filter(month => waterMonths.includes(month)).length;
+    const total = Math.max(elecMonths.length, waterMonths.length);
+    
+    // Base score from overlap
+    let score = (overlap / total) * 80;
+    
+    // Bonus for adjacent months (handles cases like water 6-8, elec 7-8)
+    const waterMonthNums = waterMonths.map(m => parseInt(m.split('-')[1]));
+    const elecMonthNums = elecMonths.map(m => parseInt(m.split('-')[1]));
+    
+    // Check if electricity months are adjacent to water months
+    const isAdjacent = elecMonthNums.some(elecMonth => 
+        waterMonthNums.some(waterMonth => 
+            Math.abs(elecMonth - waterMonth) <= 1
+        )
+    );
+    
+    if (isAdjacent) score += 15;
+    
+    // Penalty for too many electricity months
+    if (elecMonths.length > waterMonths.length + 1) {
+        score -= 20;
+    }
+    
+    return Math.max(0, score);
+}
+
 // Helper function to filter bills: water-first approach, extract months from water bill dates
 function filterBillsByMonth(tableData, targetMonths, propertyName) {
     const cohort = getCohortForPeriod(targetMonths);
@@ -690,20 +785,39 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
         const waterFinalMonth = calculateBillingMonth(waterBill.finalDate);
         
         if (waterInitialMonth && waterFinalMonth) {
+            // Water bill covers 2 months, so electricity should also cover those same 2 months
             electricityMonths = [waterInitialMonth, waterFinalMonth];
             console.log(`📅 Using water bill date range for electricity search: months ${waterInitialMonth}, ${waterFinalMonth}`);
+            console.log(`📅 Water bill period: ${waterBill.initialDate} to ${waterBill.finalDate}`);
         }
     } else {
         warnings.push('Water bill missing - using selected period for electricity search');
     }
     
-    // STEP 3: Find ELECTRICITY bills based on water bill's date range
+    // STEP 3: Find ELECTRICITY bills based on water bill's period coverage
     const electricity = [];
-    for (const targetMonth of electricityMonths) {
-        const candidates = rows.filter(r => r.isElec && r.billingMonth === targetMonth);
-        // Take latest if multiple found
-        if (candidates.length > 0) {
-            electricity.push(candidates[candidates.length - 1].raw);
+    
+    if (water.length > 0) {
+        const waterBill = water[0];
+        console.log(`📅 Water bill period: ${waterBill['Initial date']} to ${waterBill['Final date']}`);
+        
+        // Calculate which months the water bill actually covers (by days)
+        const waterCoverage = calculatePeriodCoverage(waterBill['Initial date'], waterBill['Final date']);
+        console.log(`📅 Water bill covers: ${JSON.stringify(waterCoverage)}`);
+        
+        // Find electricity bills that best match this coverage pattern
+        const electricityCandidates = rows.filter(r => r.isElec);
+        const bestMatches = findBestElectricityMatches(electricityCandidates, waterCoverage);
+        
+        console.log(`📅 Selected electricity bills: ${bestMatches.map(b => `${b.initialDate}-${b.finalDate}`).join(', ')}`);
+        electricity.push(...bestMatches);
+    } else {
+        // Fallback to original logic if no water bill
+        for (const targetMonth of electricityMonths) {
+            const candidates = rows.filter(r => r.isElec && r.billingMonth === targetMonth);
+            if (candidates.length > 0) {
+                electricity.push(candidates[candidates.length - 1].raw);
+            }
         }
     }
     
