@@ -6,6 +6,26 @@ const axios = require('axios');
 const { chromium } = require('playwright');
 const HouseMonkAuthManager = require('./auth_manager');
 
+// Concurrency control for Browserless
+let activeBrowserSessions = 0;
+const MAX_CONCURRENT_SESSIONS = 2;
+
+// Wait for available browser session slot
+async function waitForBrowserSlot() {
+    while (activeBrowserSessions >= MAX_CONCURRENT_SESSIONS) {
+        console.log(`⏳ Waiting for browser slot (${activeBrowserSessions}/${MAX_CONCURRENT_SESSIONS} active)...`);
+        await sleep(2000); // Wait 2 seconds before checking again
+    }
+    activeBrowserSessions++;
+    console.log(`✅ Browser slot acquired (${activeBrowserSessions}/${MAX_CONCURRENT_SESSIONS} active)`);
+}
+
+// Release browser session slot
+function releaseBrowserSlot() {
+    activeBrowserSessions = Math.max(0, activeBrowserSessions - 1);
+    console.log(`🔄 Browser slot released (${activeBrowserSessions}/${MAX_CONCURRENT_SESSIONS} active)`);
+}
+
 // Helper function to sanitize filenames
 function sanitize(name) {
     return String(name || "").replace(/[^A-Za-z0-9_\-]+/g, "_");
@@ -511,8 +531,11 @@ app.get('/api/env-flags', (req, res) => {
 async function createBrowserSession() {
     let browser, context, page;
     
+    // Wait for available browser slot
+    await waitForBrowserSlot();
+    
     // Add longer delay to avoid rate limiting
-    await sleep(5000 + Math.random() * 10000); // 5-15s random delay
+    await sleep(10000 + Math.random() * 20000); // 10-30s random delay
     
     try {
         console.log('🟡 Launching Playwright Chromium...');
@@ -601,6 +624,9 @@ async function cleanupBrowserSession(browser, context) {
         }
     } catch (error) {
         console.error('Error cleaning up browser session:', error);
+    } finally {
+        // Always release the browser slot
+        releaseBrowserSlot();
     }
 }
 
@@ -901,7 +927,7 @@ Respond in JSON format:
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'command-r',
+                model: 'command',
                 prompt: prompt,
                 temperature: 0.1,
                 max_tokens: 1000
@@ -1692,6 +1718,8 @@ app.post('/api/process-properties-batch', async (req, res) => {
             if (browser) {
                 await browser.close();
             }
+            // Release browser slot
+            releaseBrowserSlot();
         }
         
         logs.push({ message: `🎉 Processing completed!`, level: 'success' });
