@@ -12,8 +12,17 @@ const MAX_CONCURRENT_SESSIONS = 2;
 
 // Wait for available browser session slot
 async function waitForBrowserSlot() {
+    const maxWaitTime = 300000; // 5 minutes max wait
+    const startTime = Date.now();
+    
     while (activeBrowserSessions >= MAX_CONCURRENT_SESSIONS) {
-        console.log(`⏳ Waiting for browser slot (${activeBrowserSessions}/${MAX_CONCURRENT_SESSIONS} active)...`);
+        const elapsed = Date.now() - startTime;
+        if (elapsed > maxWaitTime) {
+            console.error(`❌ Timeout waiting for browser slot after ${maxWaitTime/1000}s`);
+            throw new Error(`Timeout waiting for browser slot after ${maxWaitTime/1000} seconds`);
+        }
+        
+        console.log(`⏳ Waiting for browser slot (${activeBrowserSessions}/${MAX_CONCURRENT_SESSIONS} active)... (${Math.round(elapsed/1000)}s elapsed)`);
         await sleep(2000); // Wait 2 seconds before checking again
     }
     activeBrowserSessions++;
@@ -24,6 +33,12 @@ async function waitForBrowserSlot() {
 function releaseBrowserSlot() {
     activeBrowserSessions = Math.max(0, activeBrowserSessions - 1);
     console.log(`🔄 Browser slot released (${activeBrowserSessions}/${MAX_CONCURRENT_SESSIONS} active)`);
+}
+
+// Reset browser slots (emergency function)
+function resetBrowserSlots() {
+    console.log(`🔄 Resetting browser slots from ${activeBrowserSessions} to 0`);
+    activeBrowserSessions = 0;
 }
 
 // Helper function to sanitize filenames
@@ -610,6 +625,8 @@ async function createBrowserSession() {
         
     } catch (error) {
         console.error('❌ Failed to create browser session:', error);
+        // Always release the slot on error
+        releaseBrowserSlot();
         throw error;
     }
 }
@@ -1066,6 +1083,9 @@ app.post('/api/process-properties', async (req, res) => {
         }
         console.log('ℹ️ Processing all provided properties');
         sendEvent({ type: 'log', level: 'info', message: 'ℹ️ Processing all provided properties' });
+        
+        // Reset browser slots at start of each run to prevent stuck slots
+        resetBrowserSlots();
 
         // Setup cooperative cancel (manual only, not on disconnect)
         CURRENT_RUN = { cancelled: false };
@@ -1431,6 +1451,12 @@ app.post('/api/cancel-current-run', (req, res) => {
     console.log('🛑 Cancel requested via API');
     sendEvent({ type: 'log', level: 'warning', message: '🛑 Cancel requested - stopping as soon as safe' });
     res.json({ success: true, message: 'Cancel requested' });
+});
+
+// Reset browser slots endpoint
+app.post('/api/reset-browser-slots', (req, res) => {
+    resetBrowserSlots();
+    res.json({ success: true, message: 'Browser slots reset' });
 });
 
 // Batch processing endpoint - processes 15 properties then restarts
