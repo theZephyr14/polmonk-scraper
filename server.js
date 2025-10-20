@@ -19,7 +19,10 @@ async function waitForBrowserSlot() {
         const elapsed = Date.now() - startTime;
         if (elapsed > maxWaitTime) {
             console.error(`❌ Timeout waiting for browser slot after ${maxWaitTime/1000}s`);
-            throw new Error(`Timeout waiting for browser slot after ${maxWaitTime/1000} seconds`);
+            console.log('🔄 Resetting browser slots due to timeout...');
+            resetBrowserSlots();
+            // After reset, allow this request to proceed
+            break;
         }
         
         console.log(`⏳ Waiting for browser slot (${activeBrowserSessions}/${MAX_CONCURRENT_SESSIONS} active)... (${Math.round(elapsed/1000)}s elapsed)`);
@@ -1164,8 +1167,8 @@ app.post('/api/process-properties', async (req, res) => {
                     break;
                 }
                 
-                // Small delay between properties to smooth load
-                if (i > 0) await sleep(2000);
+                // Delay between properties to reduce load on Browserless and Polaroo
+                if (i > 0) await sleep(3000);
                 
                 const property = properties[i];
                 const propertyName = property.name || property; // Handle both old and new format
@@ -1364,25 +1367,42 @@ app.post('/api/process-properties', async (req, res) => {
                         retried.add(i);
                         logs.push({ message: '♻️ Session appears closed. Recreating browser context and retrying property once...', level: 'warning' });
                         sendEvent({ type: 'log', level: 'warning', message: '♻️ Recreating browser and retrying current property once...' });
+                        
+                        // Properly cleanup old session first (this releases the slot)
                         try {
                             await cleanupBrowserSession(browser, context);
-                        } catch(_) {}
-                        const session = await createBrowserSession();
-                        browser = session.browser;
-                        context = session.context;
-                        // Re-login
-                        let relogin = await context.newPage();
-                        try {
-                            await withRetry(async (attempt) => {
-                                logs.push({ message: `🔑 Re-logging into Polaroo... (attempt ${attempt})`, level: 'info' });
-                                await performPolarooLogin(relogin, email, password);
-                            }, 2, 1000, 'relogin');
-                        } finally {
-                            await relogin.close().catch(() => {});
+                        } catch(cleanupErr) {
+                            console.log('⚠️ Warning during cleanup:', cleanupErr.message);
                         }
-                        // Retry current index
-                        i -= 1;
-                        continue;
+                        
+                        // Add delay before creating new session
+                        await sleep(5000);
+                        
+                        // Create new session and retry
+                        try {
+                            const session = await createBrowserSession();
+                            browser = session.browser;
+                            context = session.context;
+                            
+                            // Re-login
+                            let relogin = await context.newPage();
+                            try {
+                                await withRetry(async (attempt) => {
+                                    logs.push({ message: `🔑 Re-logging into Polaroo... (attempt ${attempt})`, level: 'info' });
+                                    await performPolarooLogin(relogin, email, password);
+                                }, 2, 1000, 'relogin');
+                            } finally {
+                                await relogin.close().catch(() => {});
+                            }
+                            
+                            // Retry current index
+                            i -= 1;
+                            continue;
+                        } catch (retryError) {
+                            logs.push({ message: `⚠️ Failed to recreate session: ${retryError.message}. Skipping property.`, level: 'error' });
+                            sendEvent({ type: 'log', level: 'error', message: '⚠️ Session recreation failed, skipping property...' });
+                            // Don't retry again, just move on
+                        }
                     }
                 } finally {
                     // Close page after each property (but keep browser/context alive)
@@ -1398,21 +1418,38 @@ app.post('/api/process-properties', async (req, res) => {
                     if (processedCount % 10 === 0 && processedCount < total) {
                         logs.push({ message: '♻️ Recycling browser context to keep session healthy...', level: 'info' });
                         sendEvent({ type: 'log', level: 'info', message: '♻️ Recycling browser context...' });
-                        try { await context.close(); } catch(_) {}
-                        const session = await createBrowserSession();
-                        browser = session.browser;
-                        context = session.context;
-                        // Re-login after recycle
-                        let relogin2 = await context.newPage();
-                        try {
-                            await withRetry(async (attempt) => {
-                                logs.push({ message: `🔑 Re-logging into Polaroo after recycle... (attempt ${attempt})`, level: 'info' });
-                                await performPolarooLogin(relogin2, email, password);
-                            }, 2, 1000, 'relogin-after-recycle');
-                        } finally {
-                            await relogin2.close().catch(() => {});
+                        
+                        // Properly cleanup old session first (this releases the slot)
+                        try { 
+                            await cleanupBrowserSession(browser, context); 
+                        } catch(err) {
+                            console.log('⚠️ Warning during cleanup:', err.message);
                         }
-                        await sleep(3000);
+                        
+                        // Add delay before creating new session to avoid rapid reconnections
+                        await sleep(5000);
+                        
+                        // Create new session (this acquires a new slot)
+                        try {
+                            const session = await createBrowserSession();
+                            browser = session.browser;
+                            context = session.context;
+                            
+                            // Re-login after recycle
+                            let relogin2 = await context.newPage();
+                            try {
+                                await withRetry(async (attempt) => {
+                                    logs.push({ message: `🔑 Re-logging into Polaroo after recycle... (attempt ${attempt})`, level: 'info' });
+                                    await performPolarooLogin(relogin2, email, password);
+                                }, 2, 1000, 'relogin-after-recycle');
+                            } finally {
+                                await relogin2.close().catch(() => {});
+                            }
+                        } catch (recycleError) {
+                            logs.push({ message: `⚠️ Failed to recycle context: ${recycleError.message}. Continuing with existing session.`, level: 'warning' });
+                            sendEvent({ type: 'log', level: 'warning', message: '⚠️ Context recycle failed, continuing...' });
+                            // Don't throw - continue with existing session
+                        }
                     }
                 }
             }
@@ -2431,6 +2468,9 @@ app.post('/api/run-overuse-end-to-end', async (req, res) => {
 
         try {
             for (let i = 0; i < propertiesToProcess.length; i++) {
+                // Delay between properties to reduce load
+                if (i > 0) await sleep(3000);
+                
                 const prop = propertiesToProcess[i];
                 const label = `${prop.property} (${i+1}/${propertiesToProcess.length})`;
                 sendEvent({ type: 'log', level: 'info', message: `🏠 ${label}` });
@@ -2484,21 +2524,34 @@ app.post('/api/run-overuse-end-to-end', async (req, res) => {
                             retryCount++;
                             sendEvent({ type: 'log', level: 'warning', message: `♻️ Browser closed, recreating session and retrying ${prop.property}...` });
                             
-                            // Recreate browser session
-                            try { await cleanupBrowserSession(browser, context); } catch(_) {}
-                            const session = await createBrowserSession();
-                            browser = session.browser;
-                            context = session.context;
-                            
-                            // Re-login
-                            let relogin = await context.newPage();
-                            try {
-                                await performPolarooLogin(relogin, process.env.POLAROO_EMAIL, process.env.POLAROO_PASSWORD);
-                            } finally {
-                                await relogin.close().catch(() => {});
+                            // Properly cleanup old session first (this releases the slot)
+                            try { 
+                                await cleanupBrowserSession(browser, context); 
+                            } catch(cleanupErr) {
+                                console.log('⚠️ Warning during cleanup:', cleanupErr.message);
                             }
-                            await sleep(3000);
-                            continue;
+                            
+                            // Add delay before creating new session
+                            await sleep(5000);
+                            
+                            // Recreate browser session
+                            try {
+                                const session = await createBrowserSession();
+                                browser = session.browser;
+                                context = session.context;
+                                
+                                // Re-login
+                                let relogin = await context.newPage();
+                                try {
+                                    await performPolarooLogin(relogin, process.env.POLAROO_EMAIL, process.env.POLAROO_PASSWORD);
+                                } finally {
+                                    await relogin.close().catch(() => {});
+                                }
+                                continue;
+                            } catch (retryError) {
+                                sendEvent({ type: 'log', level: 'error', message: `⚠️ Failed to recreate session: ${retryError.message}. Skipping property.` });
+                                success = true; // Exit retry loop on failure
+                            }
                         }
                         
                         items.push({ property: prop.property, status: 'failed', error: e.message });
