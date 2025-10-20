@@ -31,50 +31,77 @@ async function downloadPdfsForPropertyWithContext(propertyName, selectedBills, c
         console.log('⏳ Waiting for search results...');
         await page.waitForSelector('table tr', { timeout: 10000 });
         
-        // Find download buttons (cloud icons in # column)
-        console.log(`📥 Looking for download buttons (cloud icons)...`);
-        const downloadButtons = page.locator('table tr td:first-child button');
-        const elementCount = await downloadButtons.count();
-        
-        console.log(`📋 Found ${elementCount} download buttons`);
-        
         const pdfs = [];
-        
-        // Download PDFs by clicking cloud icons (up to 3 PDFs)
-        const maxDownloads = Math.min(elementCount, 3);
-        console.log(`📥 Downloading up to ${maxDownloads} PDFs...`);
-        
-        for (let i = 0; i < maxDownloads; i++) {
+
+        // 1) If we received explicit selected bills from the process step, use them strictly
+        if (Array.isArray(selectedBills) && selectedBills.length > 0) {
+            console.log(`📋 Using ${selectedBills.length} selected bills from process step`);
+            for (const bill of selectedBills) {
+                const service = String(bill.Service || '').toLowerCase();
+                if (service.includes('gas')) {
+                    console.log('⛔ Skipping GAS bill from selected bills');
+                    continue;
+                }
+                const buf = await downloadSinglePdf(page, bill);
+                if (buf && buf.length > 0) {
+                    const safeSvc = (bill.Service || 'invoice').toLowerCase().split(' ')[0];
+                    const id = (bill['Initial date'] || '').replace(/\//g, '-');
+                    const fd = (bill['Final date'] || '').replace(/\//g, '-');
+                    const fileName = `${sanitize(propertyName)}_${safeSvc}_${id}_${fd}.pdf`;
+                    pdfs.push({ buffer: buf, fileName });
+                    console.log(`✅ Downloaded (selected): ${fileName}`);
+                }
+            }
+            return pdfs;
+        }
+
+        // 2) Otherwise, fall back to clicking only non-GAS rows (top 3)
+        console.log('📥 No selected bills provided. Falling back to first non-gas rows...');
+        const nonGasRowIdxs = await page.evaluate(() => {
+            const headerCells = Array.from(document.querySelectorAll('table thead th'));
+            const headers = headerCells.map(th => th.innerText.trim().toLowerCase());
+            let serviceIdx = headers.indexOf('service');
+            if (serviceIdx === -1) {
+                const ths = Array.from(document.querySelectorAll('table tr')).find(r => r.querySelectorAll('th').length)?.querySelectorAll('th');
+                if (ths) {
+                    const texts = Array.from(ths).map(th => th.innerText.trim().toLowerCase());
+                    serviceIdx = texts.indexOf('service');
+                }
+            }
+            const rows = Array.from(document.querySelectorAll('table tbody tr'));
+            const idxs = [];
+            rows.forEach((tr, idx) => {
+                const tds = Array.from(tr.querySelectorAll('td'));
+                const svc = (serviceIdx >= 0 ? (tds[serviceIdx]?.innerText || '') : '').toLowerCase();
+                if (!svc.includes('gas')) idxs.push(idx);
+            });
+            return idxs;
+        });
+
+        const toDownload = nonGasRowIdxs.slice(0, 3);
+        console.log(`📥 Will download rows (non-gas): ${JSON.stringify(toDownload)}`);
+
+        for (let i = 0; i < toDownload.length; i++) {
             try {
-                console.log(`📥 Downloading PDF ${i + 1}/${maxDownloads}...`);
-                
-                // Set up new page promise for Adobe tab
+                const rowIdx = toDownload[i];
+                console.log(`📥 Downloading row index ${rowIdx} ...`);
+                const downloadButtons = page.locator('table tbody tr td:first-child button');
+                const element = downloadButtons.nth(rowIdx);
+
                 const newPagePromise = page.context().waitForEvent('page', { timeout: 10000 });
-                
-                // Click the cloud icon
-                const element = downloadButtons.nth(i);
                 await element.click();
-                
-                // Wait for new page (Adobe tab) to open
                 const newPage = await newPagePromise;
-                console.log('📄 Adobe tab opened, waiting for PDF to load...');
-                
-                // Wait for PDF network response and fetch raw bytes
                 await newPage.waitForLoadState('networkidle', { timeout: 20000 });
 
                 let pdfBuffer = null;
-
                 try {
                     const pdfResponse = await newPage.waitForResponse(resp => {
                         const ct = resp.headers()['content-type'] || '';
                         return ct.includes('application/pdf');
                     }, { timeout: 10000 });
-                    try {
-                        pdfBuffer = await pdfResponse.body();
-                    } catch (_) { /* ignore */ }
-                } catch (_) { /* ignore */ }
+                    try { pdfBuffer = await pdfResponse.body(); } catch (_) {}
+                } catch (_) {}
 
-                // Fallback: try to read the src from an embed/iframe and download via Axios (with cookies)
                 if (!pdfBuffer || pdfBuffer.length < 1000) {
                     try {
                         const src = await newPage.evaluate(() => {
@@ -82,48 +109,28 @@ async function downloadPdfsForPropertyWithContext(propertyName, selectedBills, c
                             return el ? (el.src || el.getAttribute('src')) : null;
                         });
                         if (src) {
-                            // Collect cookies to pass along
                             const cookies = await newPage.context().cookies();
                             const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
-                            const resp = await axios.get(src, {
-                                responseType: 'arraybuffer',
-                                headers: { Cookie: cookieHeader }
-                            });
+                            const resp = await axios.get(src, { responseType: 'arraybuffer', headers: { Cookie: cookieHeader } });
                             pdfBuffer = Buffer.from(resp.data);
                         }
-                    } catch (fallbackErr) {
-                        console.log('⚠️ Fallback PDF fetch failed:', fallbackErr.message);
-                    }
+                    } catch (_) {}
                 }
-
-                // As a last resort, avoid printing the web page to PDF (produces blank PDFs)
-
-                // DEBUG: Check PDF integrity
-                console.log(`🔍 DEBUG PDF ${i + 1}:`);
-                console.log(`  - Buffer length: ${pdfBuffer ? pdfBuffer.length : 'null'}`);
-                console.log(`  - Buffer type: ${typeof pdfBuffer}`);
-                console.log(`  - First 20 bytes: ${pdfBuffer ? Array.from(pdfBuffer.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' ') : 'null'}`);
-                console.log(`  - Is valid PDF header: ${pdfBuffer && pdfBuffer.length > 4 ? pdfBuffer.slice(0, 4).toString() === '%PDF' : false}`);
 
                 if (pdfBuffer && pdfBuffer.length > 0) {
                     const fileName = `${sanitize(propertyName)}_invoice_${Date.now()}.pdf`;
-                    pdfs.push({
-                        buffer: pdfBuffer,
-                        fileName: fileName
-                    });
+                    pdfs.push({ buffer: pdfBuffer, fileName });
                     console.log(`✅ Downloaded: ${fileName} (${pdfBuffer.length} bytes)`);
                 } else {
-                    console.log(`⚠️ No PDF content received for download ${i + 1}`);
+                    console.log('⚠️ No PDF content received');
                 }
-                
-                // Close the Adobe tab
+
                 await newPage.close();
-                
-            } catch (error) {
-                console.log(`⚠️ Failed to download PDF ${i + 1}: ${error.message}`);
+            } catch (e) {
+                console.log(`⚠️ Failed to download row: ${e.message}`);
             }
         }
-        
+
         return pdfs;
     } finally {
         // Close only the page, not the context
