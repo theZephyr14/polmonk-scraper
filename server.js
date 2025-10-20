@@ -4,7 +4,6 @@ const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 const { chromium } = require('playwright');
-const HouseMonkAuthManager = require('./auth_manager');
 
 // Concurrency control for Browserless
 let activeBrowserSessions = 0;
@@ -90,8 +89,6 @@ function buildJsonBlobsForProperty(propertyName, overuseData) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize HouseMonk authentication manager
-const authManager = new HouseMonkAuthManager();
 
 // Middleware
 app.use(express.json());
@@ -1906,105 +1903,8 @@ app.post('/api/export-test-data', (req, res) => {
     }
 });
 
-// TEST ONLY: Verify exported test data exists and return a brief summary
-app.get('/api/housemonk-test/summary', (req, res) => {
-    try {
-        const filePath = 'test_overuse_data.json';
-        if (!fs.existsSync(filePath)) {
-            return res.json({ success: true, exists: false, count: 0, properties: [] });
-        }
-        const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-        const properties = (data || []).map(r => ({ property: r.property, overuse: r.overuse_amount, rooms: r.rooms }));
-        res.json({ success: true, exists: true, count: properties.length, properties });
-    } catch (error) {
-        console.error('Error reading test_overuse_data.json:', error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// TEST ONLY: Return the full exported JSON file for download
-app.get('/api/housemonk-test/file', (req, res) => {
-    try {
-        const filePath = 'test_overuse_data.json';
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ success: false, message: 'test_overuse_data.json not found' });
-        }
-        res.setHeader('Content-Type', 'application/json');
-        res.send(fs.readFileSync(filePath, 'utf8'));
-    } catch (error) {
-        console.error('Error sending test_overuse_data.json:', error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
 
 
-// TEST ONLY: HouseMonk sandbox auth check using proper token refresh
-app.post('/api/housemonk-test/auth-check', async (req, res) => {
-    try {
-        console.log('🔍 Testing HouseMonk authentication...');
-        
-        // Get valid tokens (will refresh if needed)
-        const masterToken = await authManager.getValidMasterToken();
-        const userToken = await authManager.getValidUserToken();
-        
-        // Get token status for debugging
-        const tokenStatus = authManager.getTokenStatus();
-        
-        console.log('✅ Authentication test successful');
-        
-        return res.json({ 
-            success: true, 
-            message: 'Authentication working properly',
-            tokens: {
-                masterToken: Boolean(masterToken),
-                userToken: Boolean(userToken)
-            },
-            status: tokenStatus,
-            debug: {
-                masterTokenLength: masterToken ? masterToken.length : 0,
-                userTokenLength: userToken ? userToken.length : 0
-            }
-        });
-    } catch (error) {
-        console.error('❌ HouseMonk auth-check error:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: error.message,
-            step: 'authentication-test'
-        });
-    }
-});
-
-
-// TEST ONLY: Test making an actual API call with authentication
-app.post('/api/housemonk-test/api-call', async (req, res) => {
-    try {
-        const { endpoint = '/api/home', method = 'GET' } = req.body;
-        
-        console.log(`🔍 Testing API call: ${method} ${endpoint}`);
-        
-        // Make authenticated request
-        const response = await authManager.makeAuthenticatedRequest(method, endpoint);
-        
-        console.log('✅ API call successful');
-        
-        return res.json({
-            success: true,
-            message: 'API call successful',
-            data: response.data,
-            status: response.status,
-            headers: response.headers
-        });
-    } catch (error) {
-        console.error('❌ API call error:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message,
-            response: error.response?.data,
-            status: error.response?.status
-        });
-    }
-});
 
 // Error handling middleware
 app.use((error, req, res, next) => {
