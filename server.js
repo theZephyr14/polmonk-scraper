@@ -1309,7 +1309,8 @@ app.post('/api/process-properties', async (req, res) => {
                     overuse_amount: overuseAmount,
                     rooms: roomCount,
                     unitCode: property.unitCode || '',
-                    warnings: warnings || []
+                    warnings: warnings || [],
+                    selected_bills: [...electricityBills, ...waterBills] // Include the actual selected bills
                     };
                     
                     // DEBUG: Log bill counts for data flow tracking
@@ -1726,6 +1727,7 @@ app.post('/api/process-properties-batch', async (req, res) => {
                         overuse_amount: overuseAmount,
                         success: true,
                         warnings: warnings || [],
+                        selected_bills: [...electricityBills, ...waterBills], // Include the actual selected bills
                         message: `Processed ${electricityBills.length + waterBills.length} bills (${electricityBills.length} electricity, ${waterBills.length} water)`
                     };
                     
