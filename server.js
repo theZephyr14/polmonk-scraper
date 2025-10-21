@@ -892,7 +892,7 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
         const bestMatches = findBestElectricityMatches(electricityCandidates, waterCoverage);
         
         console.log(`📅 Selected electricity bills: ${bestMatches.map(b => `${b.initialDate}-${b.finalDate}`).join(', ')}`);
-        electricity.push(...bestMatches);
+        electricity.push(...bestMatches.map(b => b.raw));
     } else {
         // Fallback to original logic if no water bill
         console.log(`🔍 DEBUG: No water bill, using fallback logic for months: ${electricityMonths}`);
@@ -1162,9 +1162,9 @@ app.post('/api/process-properties', async (req, res) => {
             // Login to Polaroo ONCE for this batch
             let loginPage = await context.newPage();
             try {
-                await withRetry(async (attempt) => {
-                    logs.push({ message: `🔑 Logging into Polaroo... (attempt ${attempt})`, level: 'info' });
-                    sendEvent({ type: 'log', level: 'info', message: `🔑 Logging into Polaroo... (attempt ${attempt})` });
+            await withRetry(async (attempt) => {
+                logs.push({ message: `🔑 Logging into Polaroo... (attempt ${attempt})`, level: 'info' });
+                sendEvent({ type: 'log', level: 'info', message: `🔑 Logging into Polaroo... (attempt ${attempt})` });
                     await performPolarooLogin(loginPage, email, password);
                     logs.push({ message: '✅ Successfully logged into Polaroo!', level: 'success' });
                     sendEvent({ type: 'log', level: 'success', message: '✅ Successfully logged into Polaroo!' });
@@ -1316,7 +1316,7 @@ app.post('/api/process-properties', async (req, res) => {
                         }
                         
                         return data;
-                        });
+                    });
                         
                         if (tableData.length === 0) {
                             logs.push({ message: `⚠️ No bills extracted on attempt ${extractionAttempts}, retrying...`, level: 'warning' });
@@ -1471,14 +1471,14 @@ app.post('/api/process-properties', async (req, res) => {
                 }
                 
                 if (!needsRetry) {
-                    // Calculate allowance and overuse
-                    const monthlyAllowance = getMonthlyAllowance(propertyName, roomCount);
-                    const totalAllowance = monthlyAllowance * 2; // 2 months
-                    const overuseAmount = Math.max(0, totalCost - totalAllowance);
-                    
-                    logs.push({ message: `📊 Electricity: ${electricityBills.length} bills, ${electricityCost.toFixed(2)} €`, level: 'info' });
-                    logs.push({ message: `📊 Water: ${waterBills.length} bills, ${waterCost.toFixed(2)} €`, level: 'info' });
-                    logs.push({ message: `📊 Total Cost: ${totalCost.toFixed(2)} €, Allowance: ${totalAllowance} €, Overuse: ${overuseAmount.toFixed(2)} €`, level: 'success' });
+                // Calculate allowance and overuse
+                const monthlyAllowance = getMonthlyAllowance(propertyName, roomCount);
+                const totalAllowance = monthlyAllowance * 2; // 2 months
+                const overuseAmount = Math.max(0, totalCost - totalAllowance);
+                
+                logs.push({ message: `📊 Electricity: ${electricityBills.length} bills, ${electricityCost.toFixed(2)} €`, level: 'info' });
+                logs.push({ message: `📊 Water: ${waterBills.length} bills, ${waterCost.toFixed(2)} €`, level: 'info' });
+                logs.push({ message: `📊 Total Cost: ${totalCost.toFixed(2)} €, Allowance: ${totalAllowance} €, Overuse: ${overuseAmount.toFixed(2)} €`, level: 'success' });
                 }
                 
                 } while (needsRetry && processingAttempts < maxProcessingAttempts);
@@ -1603,9 +1603,9 @@ app.post('/api/process-properties', async (req, res) => {
         } finally {
             // Cleanup browser session for this batch
             console.log(`🧹 Cleaning up browser session for batch ${batchIndex + 1}...`);
-            await cleanupBrowserSession(browser, context);
-        }
-        
+                await cleanupBrowserSession(browser, context);
+            }
+            
         // Wait between batches (except for the last one)
         if (batchIndex < totalBatches - 1) {
             const delaySeconds = 120; // 2 minutes between batches
