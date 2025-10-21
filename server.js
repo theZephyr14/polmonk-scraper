@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
 
 // Concurrency control for Browserless
 let activeBrowserSessions = 0;
-const MAX_CONCURRENT_SESSIONS = 2;
+const MAX_CONCURRENT_SESSIONS = 1; // Sequential processing for reliability
 
 // Wait for available browser session slot
 async function waitForBrowserSlot() {
@@ -575,17 +575,17 @@ async function createBrowserSession() {
                     ],
                     proxy: process.env.PROXY_URL ? { server: process.env.PROXY_URL } : undefined
                 });
-        } else {
-            if (!remoteWs) {
-                throw new Error('BROWSER_WS_URL (Browserless) is not configured');
-            }
-            console.log('🌐 Connecting to remote browser over WebSocket…');
+            } else {
+                if (!remoteWs) {
+                    throw new Error('BROWSER_WS_URL (Browserless) is not configured');
+                }
+                console.log('🌐 Connecting to remote browser over WebSocket…');
             
             // Retry with exponential backoff for 429 errors
             let lastError;
             for (let attempt = 1; attempt <= 8; attempt++) {
                 try {
-                    browser = await chromium.connectOverCDP(remoteWs);
+                browser = await chromium.connectOverCDP(remoteWs);
                     break;
                 } catch (error) {
                     lastError = error;
@@ -812,7 +812,7 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
         const isWater = service.includes('water') || service.includes('agua');
         
         console.log(`✅ DEBUG: Adding bill - BillingMonth: ${billingMonth}, IsElec: ${isElec}, IsWater: ${isWater}`);
-        
+
         rows.push({
             raw: bill,
             billingMonth,
@@ -1115,25 +1115,51 @@ app.post('/api/process-properties', async (req, res) => {
         const results = [];
         const logs = [];
         
-        // Create ONE browser session for all properties (optimized for paid Browserless)
-        let browser, context;
-        try {
-            console.log('🟡 Creating shared browser session for all properties...');
-            const session = await createBrowserSession();
-            browser = session.browser;
-            context = session.context;
-            console.log('✅ Shared browser session created successfully');
-        } catch (error) {
-            console.error('❌ Failed to create shared browser session:', error);
-            return res.status(500).json({
-                success: false,
-                message: 'Failed to create browser session',
-                error: error.message
-            });
-        }
+        // Process properties in batches of 20 per browser session
+        const PROPERTIES_PER_SESSION = 20;
+        const totalBatches = Math.ceil(totalToProcess / PROPERTIES_PER_SESSION);
+        
+        console.log(`📦 Processing ${totalToProcess} properties in ${totalBatches} batch(es) of up to ${PROPERTIES_PER_SESSION} properties per session`);
+        sendEvent({ type: 'log', level: 'info', message: `📦 Processing in ${totalBatches} batch(es) of ${PROPERTIES_PER_SESSION} properties` });
+        
+        for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+            if (CURRENT_RUN?.cancelled) {
+                logs.push({ message: '🛑 Processing cancelled by user', level: 'warning' });
+                sendEvent({ type: 'log', level: 'warning', message: '🛑 Processing cancelled by user' });
+                break;
+            }
+            
+            const startIndex = batchIndex * PROPERTIES_PER_SESSION;
+            const endIndex = Math.min(startIndex + PROPERTIES_PER_SESSION, totalToProcess);
+            const batchProperties = properties.slice(startIndex, endIndex);
+            
+            console.log(`\n🔄 Starting Batch ${batchIndex + 1}/${totalBatches}: Properties ${startIndex + 1}-${endIndex}`);
+            sendEvent({ type: 'log', level: 'info', message: `🔄 Batch ${batchIndex + 1}/${totalBatches}: ${batchProperties.length} properties` });
+            
+            // Create ONE browser session for this batch
+            let browser, context;
+            try {
+                console.log('🟡 Creating browser session for batch...');
+                const session = await createBrowserSession();
+                browser = session.browser;
+                context = session.context;
+                console.log('✅ Browser session created successfully');
+            } catch (error) {
+                console.error('❌ Failed to create browser session:', error);
+                // Mark all properties in this batch as failed
+                batchProperties.forEach(prop => {
+                    results.push({
+                        property: prop.name || prop,
+                        success: false,
+                        error: `Failed to create browser session: ${error.message}`
+                    });
+                });
+                // Continue to next batch
+                continue;
+            }
         
         try {
-            // Login to Polaroo ONCE at the start (reuse for all properties)
+            // Login to Polaroo ONCE for this batch
             let loginPage = await context.newPage();
             try {
                 await withRetry(async (attempt) => {
@@ -1146,38 +1172,37 @@ app.post('/api/process-properties', async (req, res) => {
                 
                 // Close login page - we'll reuse the context's cookies
                 await loginPage.close();
-                logs.push({ message: '🍪 Login session established - will reuse for all properties', level: 'success' });
-                sendEvent({ type: 'log', level: 'success', message: '🍪 Login session established - will reuse for all properties' });
+                logs.push({ message: '🍪 Login session established - will reuse for batch properties', level: 'success' });
+                sendEvent({ type: 'log', level: 'success', message: '🍪 Login session established for batch' });
             } catch (error) {
                 await loginPage.close();
                 throw error;
             }
             
-            // Process each property using the shared browser session (no re-login needed)
-            // Honor client selection only: do not process any other properties
-            const total = totalToProcess;
+            // Process each property in this batch using the shared browser session
             const retried = new Set();
-            for (let i = 0; i < total; i++) {
+            for (let i = 0; i < batchProperties.length; i++) {
                 if (CURRENT_RUN?.cancelled) {
                     logs.push({ message: '🛑 Run cancelled by client disconnect', level: 'warning' });
                     sendEvent({ type: 'log', level: 'warning', message: '🛑 Run cancelled by client disconnect' });
                     break;
                 }
                 
-                // Delay between properties to reduce load on Browserless and Polaroo
+                // Delay between properties to reduce load
                 if (i > 0) await sleep(3000);
-                
-                const property = properties[i];
+            
+                const property = batchProperties[i];
                 const propertyName = property.name || property; // Handle both old and new format
                 const roomCount = property.rooms || 0;
                 
-                // Update progress bar
-                const progressPercentage = Math.round(((i + 1) / total) * 100);
+                // Calculate overall progress across all batches
+                const overallPropertyIndex = startIndex + i;
+                const progressPercentage = Math.round(((overallPropertyIndex + 1) / totalToProcess) * 100);
                 sendEvent({ type: 'progress', percentage: progressPercentage });
                 
-                logs.push({ message: `🏠 Processing property ${i + 1}/${totalToProcess}: ${propertyName} (${roomCount} rooms)`, level: 'info' });
-                sendEvent({ type: 'log', level: 'info', message: `🏠 Processing property ${i + 1}/${totalToProcess}: ${propertyName}` });
-                
+                logs.push({ message: `🏠 Processing property ${overallPropertyIndex + 1}/${totalToProcess}: ${propertyName} (${roomCount} rooms)`, level: 'info' });
+                sendEvent({ type: 'log', level: 'info', message: `🏠 [${overallPropertyIndex + 1}/${totalToProcess}] ${propertyName}` });
+            
                 let page;
                 
                 try {
@@ -1295,15 +1320,33 @@ app.post('/api/process-properties', async (req, res) => {
                 logs.push({ message: `⚡ Found ${electricityBills.length} electricity bills for selected months`, level: 'info' });
                 logs.push({ message: `💧 Found ${waterBills.length} water bills for selected months`, level: 'info' });
                 
-                // Calculate costs
+                // DEBUG: Log electricity bill data to diagnose cost extraction issues
+                console.log(`\n🔍 DEBUG: Electricity Bills Data for ${propertyName}:`);
+                electricityBills.forEach((bill, index) => {
+                    console.log(`  Bill ${index + 1}:`, JSON.stringify(bill, null, 2));
+                    console.log(`  - Has Total field:`, 'Total' in bill);
+                    console.log(`  - Total value:`, bill.Total);
+                    console.log(`  - All keys:`, Object.keys(bill));
+                });
+                
+                console.log(`\n🔍 DEBUG: Water Bills Data for ${propertyName}:`);
+                waterBills.forEach((bill, index) => {
+                    console.log(`  Bill ${index + 1}:`, JSON.stringify(bill, null, 2));
+                    console.log(`  - Has Total field:`, 'Total' in bill);
+                    console.log(`  - Total value:`, bill.Total);
+                });
+                
+                // Calculate costs using parseEuro for proper European currency handling
                 const electricityCost = electricityBills.reduce((sum, bill) => {
-                    const total = parseFloat((bill.Total || '0').replace('€', '').replace(',', '.').trim());
-                    return sum + (isNaN(total) ? 0 : total);
+                    const total = parseEuro(bill.Total || '0');
+                    console.log(`  - Parsing electricity bill total: "${bill.Total}" → ${total} €`);
+                    return sum + total;
                 }, 0);
                 
                 const waterCost = waterBills.reduce((sum, bill) => {
-                    const total = parseFloat((bill.Total || '0').replace('€', '').replace(',', '.').trim());
-                    return sum + (isNaN(total) ? 0 : total);
+                    const total = parseEuro(bill.Total || '0');
+                    console.log(`  - Parsing water bill total: "${bill.Total}" → ${total} €`);
+                    return sum + total;
                 }, 0);
                 
                 const totalCost = electricityCost + waterCost;
@@ -1388,7 +1431,7 @@ app.post('/api/process-properties', async (req, res) => {
                                     logs.push({ message: `🔑 Re-logging into Polaroo... (attempt ${attempt})`, level: 'info' });
                                     await performPolarooLogin(relogin, email, password);
                                 }, 2, 1000, 'relogin');
-                            } finally {
+            } finally {
                                 await relogin.close().catch(() => {});
                             }
                             
@@ -1410,54 +1453,25 @@ app.post('/api/process-properties', async (req, res) => {
                             console.log(`⚠️ Warning: Failed to close page for ${propertyName}:`, closeError.message);
                         }
                     }
-                    // Recycle context periodically to avoid TTL/memory issues
-                    const processedCount = i + 1;
-                    if (processedCount % 10 === 0 && processedCount < total) {
-                        logs.push({ message: '♻️ Recycling browser context to keep session healthy...', level: 'info' });
-                        sendEvent({ type: 'log', level: 'info', message: '♻️ Recycling browser context...' });
-                        
-                        // Properly cleanup old session first (this releases the slot)
-                        try { 
-                            await cleanupBrowserSession(browser, context); 
-                        } catch(err) {
-                            console.log('⚠️ Warning during cleanup:', err.message);
-                        }
-                        
-                        // Add delay before creating new session to avoid rapid reconnections
-                        await sleep(5000);
-                        
-                        // Create new session (this acquires a new slot)
-                        try {
-                            const session = await createBrowserSession();
-                            browser = session.browser;
-                            context = session.context;
-                            
-                            // Re-login after recycle
-                            let relogin2 = await context.newPage();
-                            try {
-                                await withRetry(async (attempt) => {
-                                    logs.push({ message: `🔑 Re-logging into Polaroo after recycle... (attempt ${attempt})`, level: 'info' });
-                                    await performPolarooLogin(relogin2, email, password);
-                                }, 2, 1000, 'relogin-after-recycle');
-                            } finally {
-                                await relogin2.close().catch(() => {});
-                            }
-                        } catch (recycleError) {
-                            logs.push({ message: `⚠️ Failed to recycle context: ${recycleError.message}. Continuing with existing session.`, level: 'warning' });
-                            sendEvent({ type: 'log', level: 'warning', message: '⚠️ Context recycle failed, continuing...' });
-                            // Don't throw - continue with existing session
-                        }
-                    }
                 }
             }
         } finally {
-            // Cleanup shared browser session only at the end
-            console.log('🧹 Cleaning up shared browser session...');
+            // Cleanup browser session for this batch
+            console.log(`🧹 Cleaning up browser session for batch ${batchIndex + 1}...`);
             await cleanupBrowserSession(browser, context);
         }
         
+        // Wait between batches (except for the last one)
+        if (batchIndex < totalBatches - 1) {
+            const delaySeconds = 120; // 2 minutes between batches
+            console.log(`⏳ Waiting ${delaySeconds}s before next batch...`);
+            sendEvent({ type: 'log', level: 'info', message: `⏳ Waiting ${delaySeconds}s before next batch...` });
+            await sleep(delaySeconds * 1000);
+        }
+    } // End of batch loop
+        
         if (!CURRENT_RUN?.cancelled) {
-            logs.push({ message: '🎉 Processing completed!', level: 'success' });
+        logs.push({ message: '🎉 Processing completed!', level: 'success' });
         }
         
         res.json({
@@ -2135,8 +2149,8 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
         const successCount = processedProperties.filter(p => p.status === 'success').length;
         const failedCount = processedProperties.filter(p => p.status === 'failed').length;
         
-        return res.json({
-            success: true,
+        return res.json({ 
+            success: true, 
             message: `PDF download completed: ${successCount} successful, ${failedCount} failed`,
             count: processedProperties.length,
             successCount,
@@ -2146,8 +2160,8 @@ app.post('/api/process-overuse-pdfs', async (req, res) => {
         
     } catch (error) {
         console.error('Error processing overuse PDFs:', error);
-        res.status(500).json({
-            success: false,
+        res.status(500).json({ 
+            success: false, 
             message: error.message
         });
     }
