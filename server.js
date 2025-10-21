@@ -1225,7 +1225,27 @@ app.post('/api/process-properties', async (req, res) => {
                 sendEvent({ type: 'log', level: 'info', message: '🔍 Navigating to accounting dashboard...' });
                     await withRetry(async () => {
                     await page.goto('https://app.polaroo.com/dashboard/accounting', { timeout: 60000, waitUntil: 'domcontentloaded' });
-                    await sleep(8000); // Wait for table to load
+                    
+                    // Wait for table to load and data to be present
+                    await page.waitForSelector('table, .table, [role="table"]', { timeout: 30000 });
+                    await page.waitForFunction(() => {
+                        const tables = document.querySelectorAll('table, .table, [role="table"]');
+                        for (const table of tables) {
+                            const rows = table.querySelectorAll('tbody tr, tr');
+                            if (rows.length > 0) {
+                                // Check if any row has a Total column with € value
+                                return Array.from(rows).some(row => {
+                                    const cells = row.querySelectorAll('td, th');
+                                    return Array.from(cells).some(cell => 
+                                        cell.textContent?.includes('€') && 
+                                        cell.textContent?.match(/\d+[,.]\d+\s*€/)
+                                    );
+                                });
+                            }
+                        }
+                        return false;
+                    }, { timeout: 30000 });
+                    await sleep(3000); // Extra buffer after data is confirmed loaded
                     }, 2, 800, 'navigate-accounting');
                     
                     // Search for property
@@ -1243,10 +1263,22 @@ app.post('/api/process-properties', async (req, res) => {
                     sendEvent({ type: 'log', level: 'info', message: '📊 Waiting for invoice table to load...' });
                     await page.waitForSelector('table, .table, [role="table"]', { timeout: 60000 });
                     
-                // Extract table data (only needed columns)
-                    logs.push({ message: `📊 Extracting invoice data...`, level: 'info' });
-                    sendEvent({ type: 'log', level: 'info', message: '📊 Extracting invoice data...' });
-                    const tableData = await page.evaluate(() => {
+                // Extract table data with retry logic for failed extractions
+                    let tableData = [];
+                    let extractionAttempts = 0;
+                    const maxExtractionAttempts = 3;
+                    
+                    while (tableData.length === 0 && extractionAttempts < maxExtractionAttempts) {
+                        extractionAttempts++;
+                        logs.push({ message: `📊 Extracting invoice data... (attempt ${extractionAttempts})`, level: 'info' });
+                        sendEvent({ type: 'log', level: 'info', message: `📊 Extracting invoice data... (attempt ${extractionAttempts})` });
+                        
+                        // Wait a bit longer on retry attempts
+                        if (extractionAttempts > 1) {
+                            await sleep(5000 + (extractionAttempts * 2000));
+                        }
+                        
+                        tableData = await page.evaluate(() => {
                         const tables = document.querySelectorAll('table, .table, [role="table"]');
                         const data = [];
                         
@@ -1284,19 +1316,40 @@ app.post('/api/process-properties', async (req, res) => {
                         }
                         
                         return data;
-                    });
+                        });
+                        
+                        if (tableData.length === 0) {
+                            logs.push({ message: `⚠️ No bills extracted on attempt ${extractionAttempts}, retrying...`, level: 'warning' });
+                            sendEvent({ type: 'log', level: 'warning', message: `⚠️ No bills extracted on attempt ${extractionAttempts}, retrying...` });
+                        }
+                    }
+                    
+                    if (tableData.length === 0) {
+                        logs.push({ message: `❌ Failed to extract bills after ${maxExtractionAttempts} attempts`, level: 'error' });
+                        sendEvent({ type: 'log', level: 'error', message: `❌ Failed to extract bills after ${maxExtractionAttempts} attempts` });
+                        throw new Error('Failed to extract bills from table');
+                    }
                     
                     logs.push({ message: `📋 Found ${tableData.length} total bills`, level: 'info' });
                     sendEvent({ type: 'log', level: 'info', message: `📋 Found ${tableData.length} total bills` });
                     
-                // Filter bills by month and service type
-                logs.push({ message: `🔍 Filtering bills by month and service...`, level: 'info' });
-                sendEvent({ type: 'log', level: 'info', message: '🔍 Filtering bills by month and service...' });
+                // Process bills with retry logic for missing bills or 0 costs
+                let filteredBills, electricityBills, waterBills, warnings;
+                let processingAttempts = 0;
+                const maxProcessingAttempts = 3;
+                let needsRetry = false;
                 
-                let filteredBills = filterBillsByMonth(tableData, targetMonths, propertyName);
-                let electricityBills = filteredBills.electricity;
-                let waterBills = filteredBills.water;
-                let warnings = filteredBills.warnings || [];
+                do {
+                    processingAttempts++;
+                    needsRetry = false;
+                    
+                    logs.push({ message: `🔍 Filtering bills by month and service... (attempt ${processingAttempts})`, level: 'info' });
+                    sendEvent({ type: 'log', level: 'info', message: `🔍 Filtering bills by month and service... (attempt ${processingAttempts})` });
+                    
+                    filteredBills = filterBillsByMonth(tableData, targetMonths, propertyName);
+                    electricityBills = filteredBills.electricity;
+                    waterBills = filteredBills.water;
+                    warnings = filteredBills.warnings || [];
 
                 // LLM Fallback: If rule-based logic produces warnings or finds 0 bills
                 if (filteredBills.needsLLMFallback) {
@@ -1351,14 +1404,106 @@ app.post('/api/process-properties', async (req, res) => {
                 
                 const totalCost = electricityCost + waterCost;
                 
+                // Check if we need to retry due to missing bills or 0 costs
+                const hasElectricityBills = electricityBills.length > 0;
+                const hasWaterBills = waterBills.length > 0;
+                const hasElectricityCost = electricityCost > 0;
+                const hasWaterCost = waterCost > 0;
+                
+                // Determine if we should retry
+                if (processingAttempts < maxProcessingAttempts) {
+                    if ((hasElectricityBills && !hasElectricityCost) || 
+                        (hasWaterBills && !hasWaterCost) ||
+                        (!hasElectricityBills && !hasWaterBills)) {
+                        needsRetry = true;
+                        logs.push({ message: `⚠️ Retry needed: Elec bills: ${electricityBills.length} (cost: ${electricityCost}), Water bills: ${waterBills.length} (cost: ${waterCost})`, level: 'warning' });
+                        sendEvent({ type: 'log', level: 'warning', message: `⚠️ Retry needed: Elec bills: ${electricityBills.length} (cost: ${electricityCost}), Water bills: ${waterBills.length} (cost: ${waterCost})` });
+                        
+                        // Wait longer before retry
+                        await sleep(5000 + (processingAttempts * 3000));
+                        
+                        // Re-extract table data for retry
+                        logs.push({ message: `🔄 Re-extracting table data for retry...`, level: 'info' });
+                        sendEvent({ type: 'log', level: 'info', message: '🔄 Re-extracting table data for retry...' });
+                        
+                        tableData = await page.evaluate(() => {
+                            const tables = document.querySelectorAll('table, .table, [role="table"]');
+                            const data = [];
+                            
+                            for (const table of tables) {
+                                const rows = table.querySelectorAll('tr');
+                                const headers = [];
+                                
+                                if (rows.length > 0) {
+                                    const headerRow = rows[0];
+                                    const headerCells = headerRow.querySelectorAll('th, td');
+                                    
+                                    for (const cell of headerCells) {
+                                        headers.push(cell.textContent.trim());
+                                    }
+                                    
+                                    for (let i = 1; i < rows.length; i++) {
+                                        const cells = rows[i].querySelectorAll('td, th');
+                                        const rowData = {};
+                                        
+                                        for (let j = 0; j < cells.length && j < headers.length; j++) {
+                                            const cellText = cells[j].textContent.trim();
+                                            const header = headers[j];
+                                            
+                                            if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes', 'Total'].includes(header)) {
+                                                rowData[header] = cellText;
+                                            }
+                                        }
+                                        
+                                        if (Object.keys(rowData).length > 0) {
+                                            data.push(rowData);
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            return data;
+                        });
+                        
+                        logs.push({ message: `📋 Re-extracted ${tableData.length} bills for retry`, level: 'info' });
+                        sendEvent({ type: 'log', level: 'info', message: `📋 Re-extracted ${tableData.length} bills for retry` });
+                    }
+                }
+                
+                if (!needsRetry) {
+                    // Calculate allowance and overuse
+                    const monthlyAllowance = getMonthlyAllowance(propertyName, roomCount);
+                    const totalAllowance = monthlyAllowance * 2; // 2 months
+                    const overuseAmount = Math.max(0, totalCost - totalAllowance);
+                    
+                    logs.push({ message: `📊 Electricity: ${electricityBills.length} bills, ${electricityCost.toFixed(2)} €`, level: 'info' });
+                    logs.push({ message: `📊 Water: ${waterBills.length} bills, ${waterCost.toFixed(2)} €`, level: 'info' });
+                    logs.push({ message: `📊 Total Cost: ${totalCost.toFixed(2)} €, Allowance: ${totalAllowance} €, Overuse: ${overuseAmount.toFixed(2)} €`, level: 'success' });
+                }
+                
+                } while (needsRetry && processingAttempts < maxProcessingAttempts);
+                
+                // Final cost calculation after retries
+                const finalElectricityCost = electricityBills.reduce((sum, bill) => {
+                    const total = parseEuro(bill.Total || '0');
+                    return sum + total;
+                }, 0);
+                
+                const finalWaterCost = waterBills.reduce((sum, bill) => {
+                    const total = parseEuro(bill.Total || '0');
+                    return sum + total;
+                }, 0);
+                
+                const finalTotalCost = finalElectricityCost + finalWaterCost;
+                
                 // Calculate allowance and overuse
                 const monthlyAllowance = getMonthlyAllowance(propertyName, roomCount);
                 const totalAllowance = monthlyAllowance * 2; // 2 months
-                const overuseAmount = Math.max(0, totalCost - totalAllowance);
+                const overuseAmount = Math.max(0, finalTotalCost - totalAllowance);
                 
-                logs.push({ message: `📊 Electricity: ${electricityBills.length} bills, ${electricityCost.toFixed(2)} €`, level: 'info' });
-                logs.push({ message: `📊 Water: ${waterBills.length} bills, ${waterCost.toFixed(2)} €`, level: 'info' });
-                logs.push({ message: `📊 Total Cost: ${totalCost.toFixed(2)} €, Allowance: ${totalAllowance} €, Overuse: ${overuseAmount.toFixed(2)} €`, level: 'success' });
+                logs.push({ message: `📊 Final Electricity: ${electricityBills.length} bills, ${finalElectricityCost.toFixed(2)} €`, level: 'info' });
+                logs.push({ message: `📊 Final Water: ${waterBills.length} bills, ${finalWaterCost.toFixed(2)} €`, level: 'info' });
+                logs.push({ message: `📊 Final Total Cost: ${finalTotalCost.toFixed(2)} €, Allowance: ${totalAllowance} €, Overuse: ${overuseAmount.toFixed(2)} €`, level: 'success' });
                 
                 // Create result
                     const result = {
@@ -1366,9 +1511,9 @@ app.post('/api/process-properties', async (req, res) => {
                         success: true,
                     electricity_bills: electricityBills.length,
                     water_bills: waterBills.length,
-                    electricity_cost: electricityCost,
-                    water_cost: waterCost,
-                    total_cost: totalCost,
+                    electricity_cost: finalElectricityCost,
+                    water_cost: finalWaterCost,
+                    total_cost: finalTotalCost,
                     overuse_amount: overuseAmount,
                     rooms: roomCount,
                     unitCode: property.unitCode || '',
@@ -1380,8 +1525,8 @@ app.post('/api/process-properties', async (req, res) => {
                     console.log(`🔍 DEBUG Bill Counts for ${propertyName}:`);
                     console.log(`  - electricity_bills: ${electricityBills.length}`);
                     console.log(`  - water_bills: ${waterBills.length}`);
-                    console.log(`  - electricity_cost: ${electricityCost}`);
-                    console.log(`  - water_cost: ${waterCost}`);
+                    console.log(`  - electricity_cost: ${finalElectricityCost}`);
+                    console.log(`  - water_cost: ${finalWaterCost}`);
                     console.log(`  - overuse_amount: ${overuseAmount}`);
                     
                     results.push(result);
@@ -1673,8 +1818,28 @@ app.post('/api/process-properties-batch', async (req, res) => {
                     logs.push({ message: `🔍 Navigating to accounting dashboard...`, level: 'info' });
                     sendEvent({ type: 'log', level: 'info', message: '🔍 Navigating to accounting dashboard...' });
                     await withRetry(async () => {
-                        await page.goto('https://app.polaroo.com/dashboard/accounting', { timeout: 60000, waitUntil: 'domcontentloaded' });
-                        await sleep(8000); // Wait for table to load
+                    await page.goto('https://app.polaroo.com/dashboard/accounting', { timeout: 60000, waitUntil: 'domcontentloaded' });
+                    
+                    // Wait for table to load and data to be present
+                    await page.waitForSelector('table, .table, [role="table"]', { timeout: 30000 });
+                    await page.waitForFunction(() => {
+                        const tables = document.querySelectorAll('table, .table, [role="table"]');
+                        for (const table of tables) {
+                            const rows = table.querySelectorAll('tbody tr, tr');
+                            if (rows.length > 0) {
+                                // Check if any row has a Total column with € value
+                                return Array.from(rows).some(row => {
+                                    const cells = row.querySelectorAll('td, th');
+                                    return Array.from(cells).some(cell => 
+                                        cell.textContent?.includes('€') && 
+                                        cell.textContent?.match(/\d+[,.]\d+\s*€/)
+                                    );
+                                });
+                            }
+                        }
+                        return false;
+                    }, { timeout: 30000 });
+                    await sleep(3000); // Extra buffer after data is confirmed loaded
                     }, 2, 800, 'navigate-accounting');
                     
                     // Search for property
@@ -1692,10 +1857,22 @@ app.post('/api/process-properties-batch', async (req, res) => {
                     sendEvent({ type: 'log', level: 'info', message: '📊 Waiting for invoice table to load...' });
                     await page.waitForSelector('table, .table, [role="table"]', { timeout: 60000 });
                     
-                    // Extract table data (only needed columns)
-                    logs.push({ message: `📊 Extracting invoice data...`, level: 'info' });
-                    sendEvent({ type: 'log', level: 'info', message: '📊 Extracting invoice data...' });
-                    const tableData = await page.evaluate(() => {
+                    // Extract table data with retry logic for failed extractions
+                    let tableData = [];
+                    let extractionAttempts = 0;
+                    const maxExtractionAttempts = 3;
+                    
+                    while (tableData.length === 0 && extractionAttempts < maxExtractionAttempts) {
+                        extractionAttempts++;
+                        logs.push({ message: `📊 Extracting invoice data... (attempt ${extractionAttempts})`, level: 'info' });
+                        sendEvent({ type: 'log', level: 'info', message: `📊 Extracting invoice data... (attempt ${extractionAttempts})` });
+                        
+                        // Wait a bit longer on retry attempts
+                        if (extractionAttempts > 1) {
+                            await sleep(5000 + (extractionAttempts * 2000));
+                        }
+                        
+                        tableData = await page.evaluate(() => {
                         const tables = document.querySelectorAll('table, .table, [role="table"]');
                         const data = [];
                         
@@ -1733,7 +1910,19 @@ app.post('/api/process-properties-batch', async (req, res) => {
                         }
                         
                         return data;
-                    });
+                        });
+                        
+                        if (tableData.length === 0) {
+                            logs.push({ message: `⚠️ No bills extracted on attempt ${extractionAttempts}, retrying...`, level: 'warning' });
+                            sendEvent({ type: 'log', level: 'warning', message: `⚠️ No bills extracted on attempt ${extractionAttempts}, retrying...` });
+                        }
+                    }
+                    
+                    if (tableData.length === 0) {
+                        logs.push({ message: `❌ Failed to extract bills after ${maxExtractionAttempts} attempts`, level: 'error' });
+                        sendEvent({ type: 'log', level: 'error', message: `❌ Failed to extract bills after ${maxExtractionAttempts} attempts` });
+                        throw new Error('Failed to extract bills from table');
+                    }
                     
                     logs.push({ message: `📋 Found ${tableData.length} total bills`, level: 'info' });
                     sendEvent({ type: 'log', level: 'info', message: `📋 Found ${tableData.length} total bills` });
