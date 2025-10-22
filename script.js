@@ -29,25 +29,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (secretsTab) secretsTab.style.display = 'none';
     } catch(_) {}
 
-     // Try to restore last session on page load
-     try {
-         const storedResults = localStorage.getItem('polmonk:lastResults');
-         const storedPeriod = localStorage.getItem('polmonk:lastProcessedPeriod');
-         if (storedResults) {
-             const results = JSON.parse(storedResults);
-             console.log('🔄 Restoring last session with', results.length, 'properties');
-             
-             // Show main interface and display results
-             uploadSection.style.display = 'none';
-             mainInterface.style.display = 'block';
-             displayResults(results);
-             
-             // Enable process button
-             processBtn.disabled = false;
-         }
-     } catch (e) {
-         console.log('No previous session to restore');
-     }
+     // Clear any cached data to ensure fresh start
+     localStorage.removeItem('polmonk:lastResults');
+     localStorage.removeItem('polmonk:lastProcessedPeriod');
+     console.log('🧹 Cleared cached data for fresh start');
 
     function handleExcelUpload(e) {
         if (e) { e.preventDefault(); }
@@ -188,15 +173,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Property cohorts for bimonthly water billing
     const PROPERTY_COHORTS = {
-        ODD: ['Aribau', 'Valencia', 'Borrell', 'Padilla', 'Providencia', 'Sardenya'],
-        EVEN: ['Llull', 'Blasco', 'Torrent']
+        // Windows ending in even months (Jan–Feb, Mar–Apr, May–Jun, Jul–Aug, Sep–Oct, Nov–Dec)
+        // apply to these properties:
+        EVEN: ['Llull', 'Blasco', 'Torrent', 'Bisbe', 'Aribau', 'Comte', 'Borrell'],
+        // Windows ending in odd months (Feb–Mar, Apr–May, Jun–Jul, Aug–Sep, Oct–Nov, Dec–Jan)
+        // apply to these properties:
+        ODD: ['Padilla', 'Providencia', 'Sardenya', 'Valencia', 'St Joan']
     };
 
     // Determine cohort from month pair (second month determines cohort)
     function getCohortForPeriod(targetMonths) {
         const secondMonth = targetMonths[1];
-        // EVEN cohort: Oct(10), Dec(12), Feb(2), Apr(4), Jun(6), Aug(8)
-        const evenMonths = [10, 12, 2, 4, 6, 8];
+        // EVEN cohort: Jan-Feb(2), Mar-Apr(4), May-Jun(6), Jul-Aug(8), Sep-Oct(10), Nov-Dec(12) - ending in even months
+        // ODD cohort: Feb-Mar(3), Apr-May(5), Jun-Jul(7), Aug-Sep(9), Oct-Nov(11), Dec-Jan(1) - ending in odd months
+        const evenMonths = [2, 4, 6, 8, 10, 12];
         return evenMonths.includes(secondMonth) ? 'EVEN' : 'ODD';
     }
 
