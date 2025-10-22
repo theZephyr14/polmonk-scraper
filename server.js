@@ -829,6 +829,16 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
             continue;
         }
         
+        // Filter by year - only accept 2025 bills
+        const finalDateParts = fd.split('/');
+        if (finalDateParts.length === 3) {
+            const year = parseInt(finalDateParts[2]);
+            if (year !== 2025) {
+                console.log(`⚠️ DEBUG: Skipping bill - wrong year (${year}), only accepting 2025`);
+                continue;
+            }
+        }
+        
         // Ignore gas bills entirely
         if (service.includes('gas')) {
             console.log(`⚠️ DEBUG: Skipping gas bill`);
