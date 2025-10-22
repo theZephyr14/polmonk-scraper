@@ -644,9 +644,19 @@ async function cleanupBrowserSession(browser, context) {
 
 // Property cohorts for bimonthly water billing
 const PROPERTY_COHORTS = {
-    ODD: ['Aribau', 'Valencia', 'Borrell', 'Padilla', 'Providencia', 'Sardenya'],
-    EVEN: ['Llull', 'Blasco', 'Torrent']
+    // Windows ending in even months (Jan–Feb, Mar–Apr, May–Jun, Jul–Aug, Sep–Oct, Nov–Dec)
+    // apply to these properties:
+    EVEN: ['Llull', 'Blasco', 'Torrent', 'Bisbe', 'Aribau', 'Comte', 'Borrell'],
+    // Windows ending in odd months (Feb–Mar, Apr–May, Jun–Jul, Aug–Sep, Oct–Nov, Dec–Jan)
+    // apply to these properties:
+    ODD: ['Padilla', 'Providencia', 'Sardenya', 'Valencia', 'St Joan']
 };
+
+// Properties that don't have water invoices (only electricity)
+const NO_WATER_PROPERTIES = ['Aribau 2-1', 'Bisbe 2-2', 'Comte', 'Torrent', 'Valencia'];
+
+// Properties that only have water invoices (no electricity)
+const WATER_ONLY_PROPERTIES = ['Aribau 3-2', 'Aribau 1-2', 'Aribau 4-2'];
 
 // Determine cohort from month pair (second month determines cohort)
 function getCohortForPeriod(targetMonths) {
@@ -784,7 +794,20 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
     const isOddEnd = (secondMonth % 2) === 1; // e.g., Jul=7 is odd
     const propertyIsEven = isPropertyInCohort(propertyName, 'EVEN');
     const propertyIsOdd = isPropertyInCohort(propertyName, 'ODD');
-    const waterRequired = (isOddEnd && propertyIsOdd) || (!isOddEnd && propertyIsEven);
+    // Check for special property exceptions
+    const isNoWaterProperty = NO_WATER_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+    const isWaterOnlyProperty = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+    
+    let waterRequired = (isOddEnd && propertyIsOdd) || (!isOddEnd && propertyIsEven);
+    
+    // Override water requirement based on property exceptions
+    if (isNoWaterProperty) {
+        waterRequired = false;
+        console.log(`ℹ️ DEBUG: ${propertyName} is marked as NO_WATER property - skipping water requirement`);
+    } else if (isWaterOnlyProperty) {
+        waterRequired = true; // Force water requirement for water-only properties
+        console.log(`ℹ️ DEBUG: ${propertyName} is marked as WATER_ONLY property - requiring water`);
+    }
     
     const rows = [];
     console.log(`🔍 DEBUG: Processing ${tableData.length} bills from webpage`);
@@ -923,7 +946,9 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
     }
     
     // Only trigger LLM fallback when NO electricity bills found
-    const needsLLMFallback = electricity.length === 0;
+    // Exception: water-only properties don't need electricity, so don't trigger LLM fallback
+    const isWaterOnlyProperty = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+    const needsLLMFallback = electricity.length === 0 && !isWaterOnlyProperty;
     
     return { electricity, water, warnings, needsLLMFallback };
 }
@@ -1591,12 +1616,30 @@ app.post('/api/process-properties', async (req, res) => {
                     if (filteredBills.needsLLMFallback) {
                         issues.push('LLM fallback used');
                     }
-                    if (electricityBills.length === 0) {
+                    // Check if this is a water-only property
+                    const isWaterOnlyProperty = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+                    
+                    if (electricityBills.length === 0 && !isWaterOnlyProperty) {
                         issues.push('No electricity bills found');
                     }
                     // Only flag missing water if required for this cohort-window
                     const isOddEnd = (targetMonths[1] % 2) === 1;
-                    const waterRequiredIssue = (isOddEnd && isPropertyInCohort(propertyName, 'ODD')) || (!isOddEnd && isPropertyInCohort(propertyName, 'EVEN'));
+                    const propertyIsEven = isPropertyInCohort(propertyName, 'EVEN');
+                    const propertyIsOdd = isPropertyInCohort(propertyName, 'ODD');
+                    
+                    // Check for special property exceptions
+                    const isNoWaterProperty = NO_WATER_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+                    const isWaterOnlyProperty = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+                    
+                    let waterRequiredIssue = (isOddEnd && propertyIsOdd) || (!isOddEnd && propertyIsEven);
+                    
+                    // Override water requirement based on property exceptions
+                    if (isNoWaterProperty) {
+                        waterRequiredIssue = false;
+                    } else if (isWaterOnlyProperty) {
+                        waterRequiredIssue = true;
+                    }
+                    
                     if (waterRequiredIssue && waterBills.length === 0) {
                         issues.push('No water bills found');
                     }
