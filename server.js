@@ -1131,8 +1131,12 @@ app.post('/api/process-properties', async (req, res) => {
     console.log('💥 All operations killed, starting fresh');
     
     try {
-        // Create new run tracker
-        CURRENT_PROCESSING_RUN = { cancelled: false, startTime: Date.now() };
+        // Create new run tracker with nuclear protection
+        CURRENT_PROCESSING_RUN = { 
+            cancelled: false, 
+            startTime: Date.now(),
+            nuclearMode: true  // Ignore cancellations for first 30 seconds
+        };
         const thisRun = CURRENT_PROCESSING_RUN;
         
         const { properties, period } = req.body;
@@ -1205,7 +1209,9 @@ app.post('/api/process-properties', async (req, res) => {
         sendEvent({ type: 'log', level: 'info', message: `📦 Processing in ${totalBatches} batch(es) of ${PROPERTIES_PER_SESSION} properties` });
         
         for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
-            if (thisRun.cancelled) {
+            // Check for cancellation (ignore during nuclear mode)
+            const isNuclearMode = thisRun.nuclearMode && (Date.now() - thisRun.startTime) < 30000; // 30 seconds
+            if (thisRun.cancelled && !isNuclearMode) {
                 logs.push({ message: '🛑 Processing cancelled by user', level: 'warning' });
                 sendEvent({ type: 'log', level: 'warning', message: '🛑 Processing cancelled by user' });
                 break;
@@ -1264,14 +1270,18 @@ app.post('/api/process-properties', async (req, res) => {
             // Process each property in this batch using the shared browser session
             const retried = new Set();
             for (let i = 0; i < batchProperties.length; i++) {
-                if (thisRun.cancelled) {
+                // Check for cancellation (ignore during nuclear mode)
+                const isNuclearMode = thisRun.nuclearMode && (Date.now() - thisRun.startTime) < 30000; // 30 seconds
+                if (thisRun.cancelled && !isNuclearMode) {
                     logs.push({ message: '🛑 Run cancelled by user', level: 'warning' });
                     sendEvent({ type: 'log', level: 'warning', message: '🛑 Run cancelled by user' });
                     break;
                 }
                 
                 // Check for cancellation before each property
-                if (thisRun.cancelled) {
+                // Check for cancellation (ignore during nuclear mode)
+                const isNuclearMode = thisRun.nuclearMode && (Date.now() - thisRun.startTime) < 30000; // 30 seconds
+                if (thisRun.cancelled && !isNuclearMode) {
                     logs.push({ message: '🛑 Run cancelled by user', level: 'warning' });
                     sendEvent({ type: 'log', level: 'warning', message: '🛑 Run cancelled by user' });
                     break;
@@ -1390,12 +1400,12 @@ app.post('/api/process-properties', async (req, res) => {
                                 
                                 for (let j = 0; j < cells.length && j < headers.length; j++) {
                                     const cellText = cells[j].textContent.trim();
-                                    const header = headers[j];
-                                    
+                                const header = headers[j];
+                                
                                     // Only extract needed columns (including Total by header)
-                                    if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes', 'Total'].includes(header)) {
-                                        rowData[header] = cellText;
-                                    }
+                                if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes', 'Total'].includes(header)) {
+                                    rowData[header] = cellText;
+                                }
                                 }
                                 
                                 if (Object.keys(rowData).length > 0) {
@@ -1430,7 +1440,9 @@ app.post('/api/process-properties', async (req, res) => {
                 
                 do {
                     // Check for cancellation in retry loop
-                    if (thisRun.cancelled) {
+                    // Check for cancellation (ignore during nuclear mode)
+                    const isNuclearMode = thisRun.nuclearMode && (Date.now() - thisRun.startTime) < 30000; // 30 seconds
+                    if (thisRun.cancelled && !isNuclearMode) {
                         logs.push({ message: '🛑 Run cancelled by user during retry', level: 'warning' });
                         sendEvent({ type: 'log', level: 'warning', message: '🛑 Run cancelled by user during retry' });
                         break;
