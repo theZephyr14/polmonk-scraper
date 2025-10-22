@@ -661,8 +661,9 @@ const WATER_ONLY_PROPERTIES = ['Aribau 3-2', 'Aribau 1-2', 'Aribau 4-2'];
 // Determine cohort from month pair (second month determines cohort)
 function getCohortForPeriod(targetMonths) {
     const secondMonth = targetMonths[1];
-    // EVEN cohort: Oct(10), Dec(12), Feb(2), Apr(4), Jun(6), Aug(8)
-    const evenMonths = [10, 12, 2, 4, 6, 8];
+    // EVEN cohort: Jan-Feb(2), Mar-Apr(4), May-Jun(6), Jul-Aug(8), Sep-Oct(10), Nov-Dec(12) - ending in even months
+    // ODD cohort: Feb-Mar(3), Apr-May(5), Jun-Jul(7), Aug-Sep(9), Oct-Nov(11), Dec-Jan(1) - ending in odd months
+    const evenMonths = [2, 4, 6, 8, 10, 12];
     return evenMonths.includes(secondMonth) ? 'EVEN' : 'ODD';
 }
 
