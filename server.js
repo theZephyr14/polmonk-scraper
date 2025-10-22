@@ -1114,11 +1114,21 @@ function getMonthlyAllowance(propertyName, roomCount) {
 let CURRENT_RUN = null; // { cancelled: boolean }
 
 app.post('/api/process-properties', async (req, res) => {
-    // Wait for batch slot (ensures only one run at a time)
-    await waitForBatchSlot();
+    // NUCLEAR OPTION: Kill everything and start fresh
+    console.log('💥 NUCLEAR OPTION: Killing all existing operations and starting fresh');
     
-    // Cancel any existing processing run AFTER getting the slot
-    cancelExistingRun();
+    // Force cancel everything
+    if (CURRENT_RUN) CURRENT_RUN.cancelled = true;
+    if (CURRENT_PROCESSING_RUN) CURRENT_PROCESSING_RUN.cancelled = true;
+    
+    // Force reset all flags
+    ACTIVE_BATCH_PROCESSING = false;
+    ACTIVE_BROWSER_SESSIONS = 0;
+    
+    // Clear any stuck browser sessions
+    resetBrowserSlots();
+    
+    console.log('💥 All operations killed, starting fresh');
     
     try {
         // Create new run tracker
