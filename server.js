@@ -74,18 +74,21 @@ function releaseBatchSlot() {
 
 // Cancel existing processing run - AGGRESSIVE INSTANT CANCELLATION
 function cancelExistingRun() {
+    // Only cancel if there's actually an existing run that's not already cancelled
     if (CURRENT_PROCESSING_RUN && !CURRENT_PROCESSING_RUN.cancelled) {
         console.log('🛑 INSTANT CANCELLATION: Terminating existing processing run...');
         CURRENT_PROCESSING_RUN.cancelled = true;
+        
+        // Also reset batch processing flag immediately
+        ACTIVE_BATCH_PROCESSING = false;
+        console.log('🛑 INSTANT CANCELLATION: Batch processing flag reset');
+        
+        // Reset browser slots to free up any stuck sessions
+        resetBrowserSlots();
+        console.log('🛑 INSTANT CANCELLATION: Browser slots reset');
+    } else {
+        console.log('ℹ️ No existing run to cancel or already cancelled');
     }
-    
-    // Also reset batch processing flag immediately
-    ACTIVE_BATCH_PROCESSING = false;
-    console.log('🛑 INSTANT CANCELLATION: Batch processing flag reset');
-    
-    // Reset browser slots to free up any stuck sessions
-    resetBrowserSlots();
-    console.log('🛑 INSTANT CANCELLATION: Browser slots reset');
 }
 
 // Helper function to sanitize filenames
@@ -1111,11 +1114,11 @@ function getMonthlyAllowance(propertyName, roomCount) {
 let CURRENT_RUN = null; // { cancelled: boolean }
 
 app.post('/api/process-properties', async (req, res) => {
-    // Cancel any existing processing run first
-    cancelExistingRun();
-    
     // Wait for batch slot (ensures only one run at a time)
     await waitForBatchSlot();
+    
+    // Cancel any existing processing run AFTER getting the slot
+    cancelExistingRun();
     
     try {
         // Create new run tracker
@@ -1783,7 +1786,9 @@ app.post('/api/process-properties', async (req, res) => {
 
 // Manual cancel endpoint to stop current run
 app.post('/api/cancel-current-run', (req, res) => {
+    // Cancel both old and new run tracking systems
     if (CURRENT_RUN) CURRENT_RUN.cancelled = true;
+    if (CURRENT_PROCESSING_RUN) CURRENT_PROCESSING_RUN.cancelled = true;
     console.log('🛑 Cancel requested via API');
     sendEvent({ type: 'log', level: 'warning', message: '🛑 Cancel requested - stopping as soon as safe' });
     res.json({ success: true, message: 'Cancel requested' });
