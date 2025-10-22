@@ -780,6 +780,11 @@ function calculateMatchScore(elecMonths, waterMonths) {
 function filterBillsByMonth(tableData, targetMonths, propertyName) {
     const cohort = getCohortForPeriod(targetMonths);
     const [firstMonth, secondMonth] = targetMonths;
+    // Determine if water is required for this property's cohort and selected end month
+    const isOddEnd = (secondMonth % 2) === 1; // e.g., Jul=7 is odd
+    const propertyIsEven = isPropertyInCohort(propertyName, 'EVEN');
+    const propertyIsOdd = isPropertyInCohort(propertyName, 'ODD');
+    const waterRequired = (isOddEnd && propertyIsOdd) || (!isOddEnd && propertyIsEven);
     
     const rows = [];
     console.log(`🔍 DEBUG: Processing ${tableData.length} bills from webpage`);
@@ -829,7 +834,7 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
         warnings.push(`Property not in ${cohort} cohort for this period`);
     }
     
-    // STEP 1: Find WATER bill first (second month, matching cohort)
+    // STEP 1: Find WATER bill first (second month). Only required if cohort expects it
     let water = [];
     let electricityMonths = targetMonths; // Default to selected months
     
@@ -843,7 +848,7 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
     const waterCandidates = rows.filter(r => r.isWater && r.billingMonth === secondMonth);
     console.log(`🔍 DEBUG: Water candidates for month ${secondMonth}:`, waterCandidates.length);
     
-    if (waterCandidates.length > 0) {
+    if (waterCandidates.length > 0 && waterRequired) {
         const waterBill = waterCandidates[waterCandidates.length - 1];
         water = [waterBill.raw];
         
@@ -861,7 +866,11 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
             console.log(`📅 Water bill period: ${waterBill.initialDate} to ${waterBill.finalDate}`);
         }
     } else {
-        warnings.push('Water bill missing - using selected period for electricity search');
+        if (waterRequired) {
+            warnings.push('Water bill missing - likely other cohort this window');
+        } else {
+            warnings.push('Water not required for this cohort-window');
+        }
         console.log(`⚠️ DEBUG: No water bills found for month ${secondMonth}, using target months: ${targetMonths}`);
     }
     
@@ -907,13 +916,13 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
         warnings.push(`Extra electricity bills found (${electricity.length} instead of 2)`);
     }
     
-    if (water.length === 0) {
+    if (water.length === 0 && waterRequired) {
         warnings.push('Water bill missing');
     } else if (water.length > 1) {
         warnings.push(`Multiple water bills found (${water.length})`);
     }
     
-    // Only trigger LLM fallback when NO electricity bills found (water bills can be missing)
+    // Only trigger LLM fallback when NO electricity bills found
     const needsLLMFallback = electricity.length === 0;
     
     return { electricity, water, warnings, needsLLMFallback };
@@ -1340,22 +1349,14 @@ app.post('/api/process-properties', async (req, res) => {
                                 const cells = row.querySelectorAll('td, th');
                                 const rowData = {};
                                 
-                                // Extract all columns first
-                                for (let j = 0; j < cells.length; j++) {
+                                for (let j = 0; j < cells.length && j < headers.length; j++) {
                                     const cellText = cells[j].textContent.trim();
-                                    if (j < headers.length) {
-                                const header = headers[j];
-                                        // Extract needed columns (excluding Total, we'll get that from last column)
-                                        if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes'].includes(header)) {
-                                    rowData[header] = cellText;
-                                        }
+                                    const header = headers[j];
+                                    
+                                    // Only extract needed columns (including Total by header)
+                                    if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes', 'Total'].includes(header)) {
+                                        rowData[header] = cellText;
                                     }
-                                }
-                                
-                                // Always set Total as the LAST column value (the rightmost column)
-                                if (cells.length > 0) {
-                                    const lastCell = cells[cells.length - 1];
-                                    rowData['Total'] = lastCell.textContent.trim();
                                 }
                                 
                                 if (Object.keys(rowData).length > 0) {
@@ -1502,22 +1503,13 @@ app.post('/api/process-properties', async (req, res) => {
                                         const cells = rows[i].querySelectorAll('td, th');
                                         const rowData = {};
                                         
-                                        // Extract all columns first
-                                        for (let j = 0; j < cells.length; j++) {
+                                        for (let j = 0; j < cells.length && j < headers.length; j++) {
                                             const cellText = cells[j].textContent.trim();
-                                            if (j < headers.length) {
-                                                const header = headers[j];
-                                                // Extract needed columns (excluding Total, we'll get that from last column)
-                                                if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes'].includes(header)) {
-                                                    rowData[header] = cellText;
-                                                }
+                                            const header = headers[j];
+                                            
+                                            if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes', 'Total'].includes(header)) {
+                                                rowData[header] = cellText;
                                             }
-                                        }
-                                        
-                                        // Always set Total as the LAST column value (the rightmost column)
-                                        if (cells.length > 0) {
-                                            const lastCell = cells[cells.length - 1];
-                                            rowData['Total'] = lastCell.textContent.trim();
                                         }
                                         
                                         if (Object.keys(rowData).length > 0) {
@@ -1602,7 +1594,10 @@ app.post('/api/process-properties', async (req, res) => {
                     if (electricityBills.length === 0) {
                         issues.push('No electricity bills found');
                     }
-                    if (waterBills.length === 0) {
+                    // Only flag missing water if required for this cohort-window
+                    const isOddEnd = (targetMonths[1] % 2) === 1;
+                    const waterRequiredIssue = (isOddEnd && isPropertyInCohort(propertyName, 'ODD')) || (!isOddEnd && isPropertyInCohort(propertyName, 'EVEN'));
+                    if (waterRequiredIssue && waterBills.length === 0) {
                         issues.push('No water bills found');
                     }
                     if (warnings && warnings.length > 0) {
@@ -1997,22 +1992,14 @@ app.post('/api/process-properties-batch', async (req, res) => {
                                 const cells = row.querySelectorAll('td, th');
                                 const rowData = {};
                                 
-                                // Extract all columns first
-                                for (let j = 0; j < cells.length; j++) {
+                                for (let j = 0; j < cells.length && j < headers.length; j++) {
                                     const cellText = cells[j].textContent.trim();
-                                    if (j < headers.length) {
-                                        const header = headers[j];
-                                        // Extract needed columns (excluding Total, we'll get that from last column)
-                                        if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes'].includes(header)) {
-                                            rowData[header] = cellText;
-                                        }
-                                    }
-                                }
+                                const header = headers[j];
                                 
-                                // Always set Total as the LAST column value (the rightmost column)
-                                if (cells.length > 0) {
-                                    const lastCell = cells[cells.length - 1];
-                                    rowData['Total'] = lastCell.textContent.trim();
+                                // Only extract needed columns (including Total by header)
+                                if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes', 'Total'].includes(header)) {
+                                    rowData[header] = cellText;
+                                }
                                 }
                                 
                                 if (Object.keys(rowData).length > 0) {
