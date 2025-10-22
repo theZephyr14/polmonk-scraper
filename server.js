@@ -649,7 +649,7 @@ const PROPERTY_COHORTS = {
     EVEN: ['Llull', 'Blasco', 'Torrent', 'Bisbe', 'Aribau', 'Comte', 'Borrell'],
     // Windows ending in odd months (Feb–Mar, Apr–May, Jun–Jul, Aug–Sep, Oct–Nov, Dec–Jan)
     // apply to these properties:
-    ODD: ['Padilla', 'Providencia', 'Sardenya', 'Valencia', 'St Joan']
+    ODD: ['Padilla', 'Providencia', 'Sardenya', 'Valencia', 'Sant Joan', 'St Joan']
 };
 
 // Properties that don't have water invoices (only electricity)
