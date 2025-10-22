@@ -365,6 +365,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function processProperties(properties, period) {
         try {
+            // Cancel any existing processing first
+            try {
+                await fetch('/api/cancel-current-run', { method: 'POST' }).catch(() => {});
+                // Small delay to ensure cancellation
+                await new Promise(resolve => setTimeout(resolve, 500));
+            } catch(_) {}
+            
             addLogEntry('Starting Polaroo processing...', 'info');
             addLogEntry(`Found ${properties.length} properties to process`, 'info');
             
@@ -382,6 +389,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (data.type === 'log') addLogEntry(data.message, data.level || 'info');
                         if (data.type === 'progress') updateProgress(data.percentage || 0);
                         if (data.type === 'error') addLogEntry(`Server Error: ${data.message}`, 'error');
+                        if (data.type === 'error_summary') displayErrorSummary(data.properties);
                     } catch(_) {}
                 };
             } catch(_) {}
@@ -480,6 +488,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (data.type === 'log') addLogEntry(data.message, data.level || 'info');
                         if (data.type === 'progress') updateProgress(data.percentage || 0);
                         if (data.type === 'error') addLogEntry(`Server Error: ${data.message}`, 'error');
+                        if (data.type === 'error_summary') displayErrorSummary(data.properties);
                     } catch(_) {}
                 };
             } catch(_) {}
@@ -549,6 +558,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    function displayErrorSummary(errors) {
+        if (!errors || errors.length === 0) return;
+        
+        const resultsContainer = document.getElementById('resultsContainer');
+        const resultsList = document.getElementById('resultsList');
+        
+        // Create error summary element
+        const summaryDiv = document.createElement('div');
+        summaryDiv.className = 'error-summary';
+        summaryDiv.innerHTML = `
+            <h3>⚠️ Properties with Processing Issues (${errors.length})</h3>
+            <ul>
+                ${errors.map(err => `
+                    <li>
+                        <strong>${err.property}</strong>
+                        <ul>
+                            ${err.issues.map(issue => `<li>${issue}</li>`).join('')}
+                        </ul>
+                    </li>
+                `).join('')}
+            </ul>
+        `;
+        
+        // Insert at the top of results
+        resultsList.insertBefore(summaryDiv, resultsList.firstChild);
+    }
+
     function displayResults(results) {
         const resultsContainer = document.getElementById('resultsContainer');
         const resultsList = document.getElementById('resultsList');

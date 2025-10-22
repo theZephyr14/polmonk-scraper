@@ -9,6 +9,10 @@ const { chromium } = require('playwright');
 let activeBrowserSessions = 0;
 const MAX_CONCURRENT_SESSIONS = 1; // Sequential processing for reliability
 
+// Batch-level processing lock to prevent multiple concurrent runs
+let ACTIVE_BATCH_PROCESSING = false;
+let CURRENT_PROCESSING_RUN = null;
+
 // Wait for available browser session slot
 async function waitForBrowserSlot() {
     const maxWaitTime = 300000; // 5 minutes max wait
@@ -41,6 +45,39 @@ function releaseBrowserSlot() {
 function resetBrowserSlots() {
     console.log(`🔄 Resetting browser slots from ${activeBrowserSessions} to 0`);
     activeBrowserSessions = 0;
+}
+
+// Batch-level slot management
+async function waitForBatchSlot() {
+    const maxWaitTime = 300000; // 5 minutes max wait
+    const startTime = Date.now();
+    
+    while (ACTIVE_BATCH_PROCESSING) {
+        const elapsed = Date.now() - startTime;
+        if (elapsed > maxWaitTime) {
+            console.error(`❌ Timeout waiting for batch slot after ${maxWaitTime/1000}s`);
+            console.log('🔄 Forcing batch slot release due to timeout...');
+            ACTIVE_BATCH_PROCESSING = false;
+            break;
+        }
+        console.log(`⏳ Waiting for previous batch to complete... (${Math.round(elapsed/1000)}s elapsed)`);
+        await sleep(2000);
+    }
+    ACTIVE_BATCH_PROCESSING = true;
+    console.log(`✅ Batch slot acquired`);
+}
+
+function releaseBatchSlot() {
+    ACTIVE_BATCH_PROCESSING = false;
+    console.log(`🔄 Batch slot released`);
+}
+
+// Cancel existing processing run
+function cancelExistingRun() {
+    if (CURRENT_PROCESSING_RUN && !CURRENT_PROCESSING_RUN.cancelled) {
+        console.log('🛑 Cancelling existing processing run...');
+        CURRENT_PROCESSING_RUN.cancelled = true;
+    }
 }
 
 // Helper function to sanitize filenames
@@ -978,27 +1015,40 @@ Respond in JSON format:
   "reasoning": "<brief explanation of your selection>"
 }`;
 
-        const response = await fetch('https://api.cohere.ai/v1/generate', {
+        const response = await fetch('https://api.cohere.com/v1/generate', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${cohereApiKey}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
-                model: 'command',
+                model: 'command-light',
                 prompt: prompt,
                 temperature: 0.1,
-                max_tokens: 1000
+                max_tokens: 1000,
+                stop_sequences: ['```']
             })
         });
         
         if (!response.ok) {
-            console.error('❌ Cohere API error:', response.status);
+            const errorText = await response.text();
+            console.error('❌ Cohere API error:', response.status, errorText);
             return null;
         }
         
         const data = await response.json();
-        const llmResponse = JSON.parse(data.generations[0].text);
+        const generatedText = data.generations[0].text;
+        console.log('🤖 LLM raw response:', generatedText);
+        
+        // Try to extract JSON from the response
+        const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            console.error('❌ Could not parse LLM response as JSON');
+            return null;
+        }
+        
+        const llmResponse = JSON.parse(jsonMatch[0]);
         
         console.log(`🤖 LLM reasoning: ${llmResponse.reasoning}`);
         
@@ -1053,7 +1103,17 @@ function getMonthlyAllowance(propertyName, roomCount) {
 let CURRENT_RUN = null; // { cancelled: boolean }
 
 app.post('/api/process-properties', async (req, res) => {
+    // Cancel any existing processing run first
+    cancelExistingRun();
+    
+    // Wait for batch slot (ensures only one run at a time)
+    await waitForBatchSlot();
+    
     try {
+        // Create new run tracker
+        CURRENT_PROCESSING_RUN = { cancelled: false, startTime: Date.now() };
+        const thisRun = CURRENT_PROCESSING_RUN;
+        
         const { properties, period } = req.body;
         
         if (!properties || !Array.isArray(properties) || properties.length === 0) {
@@ -1114,6 +1174,7 @@ app.post('/api/process-properties', async (req, res) => {
         
         const results = [];
         const logs = [];
+        const processingErrors = []; // Track properties with processing issues
         
         // Process properties in batches of 20 per browser session
         const PROPERTIES_PER_SESSION = 20;
@@ -1123,7 +1184,7 @@ app.post('/api/process-properties', async (req, res) => {
         sendEvent({ type: 'log', level: 'info', message: `📦 Processing in ${totalBatches} batch(es) of ${PROPERTIES_PER_SESSION} properties` });
         
         for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
-            if (CURRENT_RUN?.cancelled) {
+            if (thisRun.cancelled) {
                 logs.push({ message: '🛑 Processing cancelled by user', level: 'warning' });
                 sendEvent({ type: 'log', level: 'warning', message: '🛑 Processing cancelled by user' });
                 break;
@@ -1182,9 +1243,9 @@ app.post('/api/process-properties', async (req, res) => {
             // Process each property in this batch using the shared browser session
             const retried = new Set();
             for (let i = 0; i < batchProperties.length; i++) {
-                if (CURRENT_RUN?.cancelled) {
-                    logs.push({ message: '🛑 Run cancelled by client disconnect', level: 'warning' });
-                    sendEvent({ type: 'log', level: 'warning', message: '🛑 Run cancelled by client disconnect' });
+                if (thisRun.cancelled) {
+                    logs.push({ message: '🛑 Run cancelled by user', level: 'warning' });
+                    sendEvent({ type: 'log', level: 'warning', message: '🛑 Run cancelled by user' });
                     break;
                 }
                 
@@ -1299,14 +1360,22 @@ app.post('/api/process-properties', async (req, res) => {
                                 const cells = row.querySelectorAll('td, th');
                                 const rowData = {};
                                 
-                                for (let j = 0; j < cells.length && j < headers.length; j++) {
+                                // Extract all columns first
+                                for (let j = 0; j < cells.length; j++) {
                                     const cellText = cells[j].textContent.trim();
-                                const header = headers[j];
-                                
-                                // Only extract needed columns
-                                if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes', 'Total'].includes(header)) {
-                                    rowData[header] = cellText;
+                                    if (j < headers.length) {
+                                        const header = headers[j];
+                                        // Extract needed columns (excluding Total, we'll get that from last column)
+                                        if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes'].includes(header)) {
+                                            rowData[header] = cellText;
+                                        }
+                                    }
                                 }
+                                
+                                // Always set Total as the LAST column value (the rightmost column)
+                                if (cells.length > 0) {
+                                    const lastCell = cells[cells.length - 1];
+                                    rowData['Total'] = lastCell.textContent.trim();
                                 }
                                 
                                 if (Object.keys(rowData).length > 0) {
@@ -1446,13 +1515,22 @@ app.post('/api/process-properties', async (req, res) => {
                                         const cells = rows[i].querySelectorAll('td, th');
                                         const rowData = {};
                                         
-                                        for (let j = 0; j < cells.length && j < headers.length; j++) {
+                                        // Extract all columns first
+                                        for (let j = 0; j < cells.length; j++) {
                                             const cellText = cells[j].textContent.trim();
-                                            const header = headers[j];
-                                            
-                                            if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes', 'Total'].includes(header)) {
-                                                rowData[header] = cellText;
+                                            if (j < headers.length) {
+                                                const header = headers[j];
+                                                // Extract needed columns (excluding Total, we'll get that from last column)
+                                                if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes'].includes(header)) {
+                                                    rowData[header] = cellText;
+                                                }
                                             }
+                                        }
+                                        
+                                        // Always set Total as the LAST column value (the rightmost column)
+                                        if (cells.length > 0) {
+                                            const lastCell = cells[cells.length - 1];
+                                            rowData['Total'] = lastCell.textContent.trim();
                                         }
                                         
                                         if (Object.keys(rowData).length > 0) {
@@ -1528,6 +1606,32 @@ app.post('/api/process-properties', async (req, res) => {
                     console.log(`  - electricity_cost: ${finalElectricityCost}`);
                     console.log(`  - water_cost: ${finalWaterCost}`);
                     console.log(`  - overuse_amount: ${overuseAmount}`);
+                    
+                    // Track properties with processing issues for summary report
+                    const issues = [];
+                    if (filteredBills.needsLLMFallback) {
+                        issues.push('LLM fallback used');
+                    }
+                    if (electricityBills.length === 0) {
+                        issues.push('No electricity bills found');
+                    }
+                    if (waterBills.length === 0) {
+                        issues.push('No water bills found');
+                    }
+                    if (warnings && warnings.length > 0) {
+                        issues.push(...warnings);
+                    }
+                    // Flag properties with high overuse (>100€) for manual review
+                    if (overuseAmount > 100) {
+                        issues.push(`⚠️ High overuse: ${overuseAmount.toFixed(2)} € (review recommended)`);
+                    }
+                    
+                    if (issues.length > 0) {
+                        processingErrors.push({
+                            property: propertyName,
+                            issues: issues
+                        });
+                    }
                     
                     results.push(result);
                 logs.push({ message: `✅ COMPLETED: ${propertyName} - ${electricityBills.length} elec + ${waterBills.length} water = ${overuseAmount.toFixed(2)} € overuse`, level: 'success' });
@@ -1615,6 +1719,16 @@ app.post('/api/process-properties', async (req, res) => {
         }
     } // End of batch loop
         
+        // Send error summary if there are any processing issues
+        if (processingErrors.length > 0) {
+            console.log(`⚠️ ${processingErrors.length} properties had processing issues`);
+            sendEvent({ 
+                type: 'error_summary', 
+                properties: processingErrors,
+                message: `${processingErrors.length} properties had processing issues`
+            });
+        }
+        
         if (!CURRENT_RUN?.cancelled) {
         logs.push({ message: '🎉 Processing completed!', level: 'success' });
         }
@@ -1635,6 +1749,9 @@ app.post('/api/process-properties', async (req, res) => {
             message: 'Processing failed',
             error: error.message
         });
+    } finally {
+        // Always release batch slot when done
+        releaseBatchSlot();
     }
 });
 
@@ -1893,14 +2010,22 @@ app.post('/api/process-properties-batch', async (req, res) => {
                                 const cells = row.querySelectorAll('td, th');
                                 const rowData = {};
                                 
-                                for (let j = 0; j < cells.length && j < headers.length; j++) {
+                                // Extract all columns first
+                                for (let j = 0; j < cells.length; j++) {
                                     const cellText = cells[j].textContent.trim();
-                                    const header = headers[j];
-                                    
-                                    // Only extract needed columns
-                                    if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes', 'Total'].includes(header)) {
-                                        rowData[header] = cellText;
+                                    if (j < headers.length) {
+                                        const header = headers[j];
+                                        // Extract needed columns (excluding Total, we'll get that from last column)
+                                        if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes'].includes(header)) {
+                                            rowData[header] = cellText;
+                                        }
                                     }
+                                }
+                                
+                                // Always set Total as the LAST column value (the rightmost column)
+                                if (cells.length > 0) {
+                                    const lastCell = cells[cells.length - 1];
+                                    rowData['Total'] = lastCell.textContent.trim();
                                 }
                                 
                                 if (Object.keys(rowData).length > 0) {
