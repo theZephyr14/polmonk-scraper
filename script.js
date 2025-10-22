@@ -19,16 +19,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const secretsTab = document.getElementById('secretsTab');
     const secretsButton = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.dataset.tab === 'secrets');
 
-    // On load: ask server if secrets exist in env; if yes, hide Secrets tab
-    fetch('/api/env-flags').then(r => r.json()).then(flags => {
-        if (flags && flags.success && flags.hasPolaroo && flags.hasCohere) {
-            // Hide secrets tab and panel
-            if (secretsButton) secretsButton.style.display = 'none';
-            if (secretsTab) secretsTab.style.display = 'none';
-            // Activate properties tab by default
-            document.querySelector('.tab-btn[data-tab="properties"]').click();
-        }
-    }).catch(() => {});
+    // Secrets UI removed; default to Properties tab
+    try {
+        const propBtn = document.querySelector('.tab-btn[data-tab="properties"]');
+        if (propBtn) propBtn.classList.add('active');
+        const propTab = document.getElementById('propertiesTab');
+        if (propTab) propTab.classList.add('active');
+        if (secretsButton) secretsButton.style.display = 'none';
+        if (secretsTab) secretsTab.style.display = 'none';
+    } catch(_) {}
 
      // Try to restore last session on page load
      try {
@@ -92,36 +91,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const uploadSubmitBtn = document.getElementById('uploadSubmit');
     if (uploadSubmitBtn) uploadSubmitBtn.addEventListener('click', handleExcelUpload);
     
-    // Secrets form submission
-    secretsForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const cohereKey = document.getElementById('cohereKey').value;
-
-        // This endpoint is optional now since Fly has secrets; keep for local/dev
-        fetch('/api/secrets', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password, cohereKey })
-        })
-        .then(async response => {
-            const data = await response.json().catch(() => ({ success: false, message: 'Invalid server response' }));
-            if (data.success) {
-                showMessage(data.message, 'success');
-                try { alert('Secrets saved successfully'); } catch(_) {}
-            } else {
-                showMessage(data.message, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error saving secrets:', error);
-            showMessage('Error saving secrets. Please try again.', 'error');
-        });
-    });
+    // Secrets form removed; no-op if referenced
+    if (secretsForm) {
+        try {
+            secretsForm.style.display = 'none';
+        } catch(_) {}
+    }
     
     // Back to upload button
     backToUploadBtn.addEventListener('click', function() {
@@ -365,11 +340,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function processProperties(properties, period) {
         try {
-            // Cancel any existing processing first
+            // INSTANT CANCELLATION - No delays, no waiting
             try {
-                await fetch('/api/cancel-current-run', { method: 'POST' }).catch(() => {});
-                // Small delay to ensure cancellation
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // Cancel immediately without waiting for response
+                fetch('/api/cancel-current-run', { method: 'POST' }).catch(() => {});
+                console.log('🛑 INSTANT CANCELLATION: Sent cancel request immediately');
             } catch(_) {}
             
             addLogEntry('Starting Polaroo processing...', 'info');

@@ -33,37 +33,12 @@
             </div>
             
             <div class="tabs">
-                <button class="tab-btn active" data-tab="secrets">Secrets</button>
-                <button class="tab-btn" data-tab="properties">Properties</button>
+                <button class="tab-btn active" data-tab="properties">Properties</button>
             </div>
             
             <div class="tab-content">
-                <!-- Secrets Tab -->
-                <div id="secretsTab" class="tab-panel active">
-                    <h2>Secrets Configuration</h2>
-                    <form id="secretsForm" class="secrets-form">
-                        <div class="form-group">
-                            <label for="email">Polaroo Email:</label>
-                            <input type="email" id="email" name="email" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="password">Polaroo Password:</label>
-                            <input type="password" id="password" name="password" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="cohereKey">Cohere API Key (Optional):</label>
-                            <input type="password" id="cohereKey" name="cohereKey" placeholder="Leave empty to use fallback logic">
-                            <small style="color: #666; font-size: 12px;">For intelligent bill analysis. Get your free key at cohere.ai</small>
-                        </div>
-                        
-                        <button type="submit" class="submit-btn">Save Secrets</button>
-                    </form>
-                </div>
-                
                 <!-- Properties Tab -->
-                <div id="propertiesTab" class="tab-panel">
+                <div id="propertiesTab" class="tab-panel active">
             <div class="properties-header">
                         <h2>Properties from Excel</h2>
                         <div style="display:flex; gap:12px; align-items:center;">

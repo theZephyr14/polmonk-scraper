@@ -72,12 +72,20 @@ function releaseBatchSlot() {
     console.log(`🔄 Batch slot released`);
 }
 
-// Cancel existing processing run
+// Cancel existing processing run - AGGRESSIVE INSTANT CANCELLATION
 function cancelExistingRun() {
     if (CURRENT_PROCESSING_RUN && !CURRENT_PROCESSING_RUN.cancelled) {
-        console.log('🛑 Cancelling existing processing run...');
+        console.log('🛑 INSTANT CANCELLATION: Terminating existing processing run...');
         CURRENT_PROCESSING_RUN.cancelled = true;
     }
+    
+    // Also reset batch processing flag immediately
+    ACTIVE_BATCH_PROCESSING = false;
+    console.log('🛑 INSTANT CANCELLATION: Batch processing flag reset');
+    
+    // Reset browser slots to free up any stuck sessions
+    resetBrowserSlots();
+    console.log('🛑 INSTANT CANCELLATION: Browser slots reset');
 }
 
 // Helper function to sanitize filenames
@@ -527,57 +535,7 @@ app.post('/api/upload', upload.single('excelFile'), (req, res) => {
     }
 });
 
-app.post('/api/secrets', (req, res) => {
-    try {
-        const { email, password, cohereKey } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email and password are required'
-            });
-        }
-
-        // Store Cohere API key in environment if provided
-        if (cohereKey && cohereKey.trim() !== '') {
-            process.env.COHERE_API_KEY = cohereKey.trim();
-            console.log('Cohere API key updated');
-        }
-
-        console.log('Secrets saved:', {
-            email: email,
-            hasCohereKey: !!cohereKey,
-            timestamp: new Date().toISOString()
-        });
-
-        res.json({
-            success: true,
-            message: 'Secrets saved successfully!'
-        });
-
-    } catch (error) {
-        console.error('Error saving secrets:', error);
-        res.status(500).json({
-            success: false,
-            message: 'An error occurred while saving secrets'
-        });
-    }
-});
-
-// Environment flags for frontend (so we can hide Secrets when using Fly secrets)
-app.get('/api/env-flags', (req, res) => {
-    try {
-        const hasPolaroo = Boolean(process.env.POLAROO_EMAIL && process.env.POLAROO_PASSWORD);
-        const hasCohere = Boolean(process.env.COHERE_API_KEY);
-        res.json({
-            success: true,
-            hasPolaroo,
-            hasCohere
-        });
-    } catch (e) {
-        res.json({ success: false, hasPolaroo: false, hasCohere: false });
-    }
-});
+// Secrets UI and related endpoints removed; Render env vars are used instead.
 
 // Helper function to create browser session for a single property
 async function createBrowserSession() {
@@ -962,14 +920,16 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
 }
 
 // LLM Fallback function for intelligent bill selection
-async function selectBillsWithLLM(tableData, targetMonths, propertyName, cohereApiKey) {
-    if (!cohereApiKey) {
-        console.log('⚠️ Cohere API key not available, skipping LLM fallback');
+async function selectBillsWithLLM(tableData, targetMonths, propertyName, openaiApiKey) {
+    console.log(`🤖 LLM Debug: OpenAI API Key available: ${!!openaiApiKey}, Key length: ${openaiApiKey ? openaiApiKey.length : 0}`);
+    
+    if (!openaiApiKey) {
+        console.log('⚠️ OpenAI API key not available, skipping LLM fallback');
         return null;
     }
     
     try {
-        console.log(`🤖 Triggering LLM fallback for ${propertyName}...`);
+        console.log(`🤖 Triggering OpenAI LLM fallback for ${propertyName}...`);
         
         // Filter out gas bills and prepare bill list
         const relevantBills = tableData.filter(bill => {
@@ -1015,36 +975,49 @@ Respond in JSON format:
   "reasoning": "<brief explanation of your selection>"
 }`;
 
-        const response = await fetch('https://api.cohere.com/v1/generate', {
+        console.log('🤖 Sending request to OpenAI API...');
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${cohereApiKey}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Authorization': `Bearer ${openaiApiKey}`,
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'command-light',
-                prompt: prompt,
+                model: 'gpt-3.5-turbo',
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ],
                 temperature: 0.1,
-                max_tokens: 1000,
-                stop_sequences: ['```']
+                max_tokens: 1000
             })
         });
         
+        console.log(`🤖 OpenAI API response status: ${response.status}`);
+        
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('❌ Cohere API error:', response.status, errorText);
+            console.error('❌ OpenAI API error:', response.status, errorText);
             return null;
         }
         
         const data = await response.json();
-        const generatedText = data.generations[0].text;
+        console.log('🤖 OpenAI API response data:', JSON.stringify(data, null, 2));
+        
+        if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+            console.error('❌ Invalid OpenAI API response structure:', data);
+            return null;
+        }
+        
+        const generatedText = data.choices[0].message.content;
         console.log('🤖 LLM raw response:', generatedText);
         
         // Try to extract JSON from the response
         const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
-            console.error('❌ Could not parse LLM response as JSON');
+            console.error('❌ Could not parse LLM response as JSON. Full response:', generatedText);
             return null;
         }
         
@@ -1249,6 +1222,13 @@ app.post('/api/process-properties', async (req, res) => {
                     break;
                 }
                 
+                // Check for cancellation before each property
+                if (thisRun.cancelled) {
+                    logs.push({ message: '🛑 Run cancelled by user', level: 'warning' });
+                    sendEvent({ type: 'log', level: 'warning', message: '🛑 Run cancelled by user' });
+                    break;
+                }
+                
                 // Delay between properties to reduce load
                 if (i > 0) await sleep(3000);
             
@@ -1364,10 +1344,10 @@ app.post('/api/process-properties', async (req, res) => {
                                 for (let j = 0; j < cells.length; j++) {
                                     const cellText = cells[j].textContent.trim();
                                     if (j < headers.length) {
-                                        const header = headers[j];
+                                const header = headers[j];
                                         // Extract needed columns (excluding Total, we'll get that from last column)
                                         if (['Asset', 'Service', 'Initial date', 'Final date', 'Subtotal', 'Taxes'].includes(header)) {
-                                            rowData[header] = cellText;
+                                    rowData[header] = cellText;
                                         }
                                     }
                                 }
@@ -1409,6 +1389,13 @@ app.post('/api/process-properties', async (req, res) => {
                 let needsRetry = false;
                 
                 do {
+                    // Check for cancellation in retry loop
+                    if (thisRun.cancelled) {
+                        logs.push({ message: '🛑 Run cancelled by user during retry', level: 'warning' });
+                        sendEvent({ type: 'log', level: 'warning', message: '🛑 Run cancelled by user during retry' });
+                        break;
+                    }
+                    
                     processingAttempts++;
                     needsRetry = false;
                     
@@ -1425,7 +1412,7 @@ app.post('/api/process-properties', async (req, res) => {
                     logs.push({ message: `⚠️ Rule-based selection has issues, trying LLM fallback...`, level: 'warning' });
                     sendEvent({ type: 'log', level: 'warning', message: '⚠️ Rule-based selection has issues, trying LLM fallback...' });
                     
-                    const llmResult = await selectBillsWithLLM(tableData, targetMonths, propertyName, process.env.COHERE_API_KEY);
+                    const llmResult = await selectBillsWithLLM(tableData, targetMonths, propertyName, process.env.OPENAI_API_KEY);
                     
                     if (llmResult && (llmResult.electricity.length > 0 || llmResult.water.length > 0)) {
                         logs.push({ message: `🤖 LLM fallback successful!`, level: 'success' });
@@ -2066,7 +2053,7 @@ app.post('/api/process-properties-batch', async (req, res) => {
                         logs.push({ message: `⚠️ Rule-based selection has issues, trying LLM fallback...`, level: 'warning' });
                         sendEvent({ type: 'log', level: 'warning', message: '⚠️ Rule-based selection has issues, trying LLM fallback...' });
                         
-                        const llmResult = await selectBillsWithLLM(tableData, targetMonths, propertyName, process.env.COHERE_API_KEY);
+                        const llmResult = await selectBillsWithLLM(tableData, targetMonths, propertyName, process.env.OPENAI_API_KEY);
                         
                         if (llmResult && (llmResult.electricity.length > 0 || llmResult.water.length > 0)) {
                             logs.push({ message: `🤖 LLM fallback successful!`, level: 'success' });
