@@ -796,7 +796,7 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
     const propertyIsOdd = isPropertyInCohort(propertyName, 'ODD');
     // Check for special property exceptions
     const isNoWaterProperty = NO_WATER_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
-    const isWaterOnlyProperty = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+    const isWaterOnlyPropertyFilter = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
     
     let waterRequired = (isOddEnd && propertyIsOdd) || (!isOddEnd && propertyIsEven);
     
@@ -804,7 +804,7 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
     if (isNoWaterProperty) {
         waterRequired = false;
         console.log(`ℹ️ DEBUG: ${propertyName} is marked as NO_WATER property - skipping water requirement`);
-    } else if (isWaterOnlyProperty) {
+    } else if (isWaterOnlyPropertyFilter) {
         waterRequired = true; // Force water requirement for water-only properties
         console.log(`ℹ️ DEBUG: ${propertyName} is marked as WATER_ONLY property - requiring water`);
     }
@@ -947,8 +947,8 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
     
     // Only trigger LLM fallback when NO electricity bills found
     // Exception: water-only properties don't need electricity, so don't trigger LLM fallback
-    const isWaterOnlyProperty = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
-    const needsLLMFallback = electricity.length === 0 && !isWaterOnlyProperty;
+    const isWaterOnlyPropertyLLM = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+    const needsLLMFallback = electricity.length === 0 && !isWaterOnlyPropertyLLM;
     
     return { electricity, water, warnings, needsLLMFallback };
 }
@@ -1617,9 +1617,9 @@ app.post('/api/process-properties', async (req, res) => {
                         issues.push('LLM fallback used');
                     }
                     // Check if this is a water-only property
-                    const isWaterOnlyProperty = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+                    const isWaterOnlyPropertyError = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
                     
-                    if (electricityBills.length === 0 && !isWaterOnlyProperty) {
+                    if (electricityBills.length === 0 && !isWaterOnlyPropertyError) {
                         issues.push('No electricity bills found');
                     }
                     // Only flag missing water if required for this cohort-window
@@ -1628,15 +1628,15 @@ app.post('/api/process-properties', async (req, res) => {
                     const propertyIsOdd = isPropertyInCohort(propertyName, 'ODD');
                     
                     // Check for special property exceptions
-                    const isNoWaterProperty = NO_WATER_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
-                    const isWaterOnlyProperty = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+                    const isNoWaterPropertyError = NO_WATER_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+                    const isWaterOnlyPropertyError2 = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
                     
                     let waterRequiredIssue = (isOddEnd && propertyIsOdd) || (!isOddEnd && propertyIsEven);
                     
                     // Override water requirement based on property exceptions
-                    if (isNoWaterProperty) {
+                    if (isNoWaterPropertyError) {
                         waterRequiredIssue = false;
-                    } else if (isWaterOnlyProperty) {
+                    } else if (isWaterOnlyPropertyError2) {
                         waterRequiredIssue = true;
                     }
                     
