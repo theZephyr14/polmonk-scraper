@@ -330,13 +330,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function processProperties(properties, period) {
         try {
-            // INSTANT CANCELLATION - No delays, no waiting
-            try {
-                // Cancel immediately without waiting for response
-                fetch('/api/cancel-current-run', { method: 'POST' }).catch(() => {});
-                console.log('🛑 INSTANT CANCELLATION: Sent cancel request immediately');
-            } catch(_) {}
-            
+            // No automatic cancellation - let the backend nuclear option handle it
             addLogEntry('Starting Polaroo processing...', 'info');
             addLogEntry(`Found ${properties.length} properties to process`, 'info');
             
