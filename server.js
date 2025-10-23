@@ -656,7 +656,7 @@ const PROPERTY_COHORTS = {
 };
 
 // Properties that don't have water invoices (only electricity)
-const NO_WATER_PROPERTIES = ['Aribau 2-1', 'Bisbe 2-2', 'Comte', 'Torrent', 'Valencia'];
+const NO_WATER_PROPERTIES = ['Aribau 2-1', 'Bisbe 2-2', 'Comte', 'Torrent', 'Valencia', 'Valencia Ático'];
 
 // Properties that only have water invoices (no electricity)
 const WATER_ONLY_PROPERTIES = ['Aribau 3-2', 'Aribau 1-2', 'Aribau 4-2'];
@@ -823,7 +823,15 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
         
         console.log(`🔍 DEBUG: Bill - Service: "${service}", Initial: "${id}", Final: "${fd}"`);
         
-        const billingMonth = calculateBillingMonth(fd);
+        // Special case for Valencia water bills - use initial date instead of final date
+        let billingMonth;
+        if (service.includes('water') && propertyName.toLowerCase().includes('valencia') && !propertyName.toLowerCase().includes('ático')) {
+            billingMonth = calculateBillingMonth(id); // Use initial date for Valencia water bills
+            console.log(`🔍 DEBUG: Valencia water bill - using initial date "${id}" for billing month calculation`);
+        } else {
+            billingMonth = calculateBillingMonth(fd); // Use final date for all other bills
+        }
+        
         if (!billingMonth) {
             console.log(`⚠️ DEBUG: Skipping bill - invalid billing month calculation for "${fd}"`);
             continue;
