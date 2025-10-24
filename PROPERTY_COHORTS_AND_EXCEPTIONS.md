@@ -46,16 +46,17 @@ These properties **ONLY** have water bills - no electricity bills are processed:
 
 ## 🔍 Special Billing Logic
 
-### Special Water Bill Date Logic
+### Water Bill Date Logic
 
-**Providencia Properties (excluding 2º 1ª):**
-- **All Providencia units** (except 2º 1ª) - Use **initial date** for water billing month calculation
-- Water bills run from start of month to start of month 2 months later (e.g., 08/07 → 04/09)
+**ALL properties use FINAL DATE with spillover logic (cutoff day 9) for water bills.**
+
+**Examples:**
+- Providencia: `08/07/2025 → 05/09/2025` - Final date 05/09 (day 5 ≤ 9) → billingMonth = **August** (for Jul-Aug period)
+- Valencia: `31/07/2025 → 01/10/2025` - Final date 01/10 (day 1 ≤ 9) → billingMonth = **September** (for Aug-Sep period)
+- Standard: `02/06/2025 → 31/07/2025` - Final date 31/07 (day 31 > 9) → billingMonth = **July** (for Jun-Jul period)
+
+**Exceptions (No water bills):**
 - **Providencia 2º 1ª** - No water bills (electricity only - in NO_WATER_PROPERTIES)
-
-**Valencia Properties:**
-- **Valencia Pral 1ª, Valencia 2º 1ª** - Use **final date** for water billing month calculation (standard)
-- Water bills run approximately 2 months with spillover into next month
 - **Valencia Ático** - No water bills (electricity only - in NO_WATER_PROPERTIES)
 
 ## 📅 Billing Month Calculation
@@ -81,8 +82,7 @@ These properties **ONLY** have water bills - no electricity bills are processed:
 - **WATER_ONLY_PROPERTIES:** 3 specific units
 
 **Special Cases:**
-- **Providencia water bills (excluding 2º 1ª):** Use initial date for billing month calculation
-- **Valencia water bills:** Use final date for billing month calculation (standard)
+- **ALL properties:** Use final date with spillover logic (cutoff day 9) for billing month calculation
 - **Valencia Ático:** No water bills (electricity only)
 - **Providencia 2º 1ª:** No water bills (electricity only)
 

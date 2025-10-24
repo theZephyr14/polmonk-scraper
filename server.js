@@ -823,22 +823,9 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
         
         console.log(`🔍 DEBUG: Bill - Service: "${service}", Initial: "${id}", Final: "${fd}"`);
         
-        // Special cases for water bills
-        let billingMonth;
-        if (service.includes('water')) {
-            // Providencia water bills (excluding 2º 1ª which has no water)
-            if (propertyName.toLowerCase().includes('providencia') && !propertyName.toLowerCase().includes('2º 1ª')) {
-                billingMonth = calculateBillingMonth(id); // Use initial date for Providencia water bills
-                console.log(`🔍 DEBUG: Providencia water bill - using initial date "${id}" for billing month calculation`);
-            }
-            // All other water bills (including Valencia)
-            else {
-                billingMonth = calculateBillingMonth(fd); // Use final date for Valencia and other water bills
-                console.log(`🔍 DEBUG: Water bill - using final date "${fd}" for billing month calculation`);
-            }
-        } else {
-            billingMonth = calculateBillingMonth(fd); // Use final date for electricity and other bills
-        }
+        // Use final date for all bills (electricity and water)
+        let billingMonth = calculateBillingMonth(fd);
+        console.log(`🔍 DEBUG: Using final date "${fd}" for billing month calculation → billingMonth: ${billingMonth}`);
         
         if (!billingMonth) {
             console.log(`⚠️ DEBUG: Skipping bill - invalid billing month calculation for "${fd}"`);
