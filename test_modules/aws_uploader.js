@@ -2,6 +2,7 @@ const axios = require('axios');
 
 // Get presigned URL from HouseMonk
 async function getPresignedUrl(auth, fileName) {
+    console.log(`🏠 Using HouseMonk ${auth.config.environment} environment for file upload: ${auth.config.baseUrl}`);
     const response = await auth.makeAuthenticatedRequest(
         'POST',
         '/api/document/presigned',

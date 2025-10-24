@@ -175,10 +175,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const PROPERTY_COHORTS = {
         // Windows ending in even months (Jan–Feb, Mar–Apr, May–Jun, Jul–Aug, Sep–Oct, Nov–Dec)
         // apply to these properties:
-        EVEN: ['Llull', 'Blasco', 'Torrent', 'Bisbe', 'Aribau', 'Comte', 'Borrell', 'Providencia'],
+        EVEN: ['Llull', 'Blasco', 'Torrent', 'Bisbe', 'Aribau', 'Comte', 'Borrell'],
         // Windows ending in odd months (Feb–Mar, Apr–May, Jun–Jul, Aug–Sep, Oct–Nov, Dec–Jan)
         // apply to these properties:
-        ODD: ['Padilla', 'Sardenya', 'Valencia', 'Sant Joan', 'St Joan']
+        ODD: ['Padilla', 'Sardenya', 'Valencia', 'Sant Joan', 'St Joan', 'Providencia']
     };
 
     // Determine cohort from month pair (second month determines cohort)

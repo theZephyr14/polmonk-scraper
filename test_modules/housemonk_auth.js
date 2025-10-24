@@ -1,11 +1,29 @@
 const axios = require('axios');
 
-// Configuration - use environment variables or fallback to sandbox
+// Environment configuration - switch between sandbox and production
+const ENVIRONMENT = process.env.HM_ENVIRONMENT || 'sandbox';
+
+const SANDBOX_CONFIG = {
+    baseUrl: 'https://qa1.thehousemonk.com',
+    clientId: '3a93c900-a2a6-11f0-9ce0-5b6f0a5d9d66',
+    clientSecret: '94d8d0ba-e92f-41ea-8642-d285852bb764',
+    userId: '68e3a508243a303bfc36884f'
+};
+
+const PRODUCTION_CONFIG = {
+    baseUrl: 'https://dashboard.thehousemonk.com',
+    clientId: '1326bbe0-8ed1-11f0-b658-7dd414f87b53',
+    clientSecret: '94d8d0ba-e92f-41ea-8642-d285852bb764', // Same as sandbox
+    userId: '6891dfbf052d1d7f336d0d62'
+};
+
+// Configuration - use environment variables or fallback to environment-specific config
 const CONFIG = {
-    baseUrl: process.env.HM_BASE_URL || 'https://qa1.thehousemonk.com',
-    clientId: process.env.HM_CLIENT_ID || '3a93c900-a2a6-11f0-9ce0-5b6f0a5d9d66',
-    clientSecret: process.env.HM_CLIENT_SECRET || '94d8d0ba-e92f-41ea-8642-d285852bb764',
-    userId: process.env.HM_USER_ID || '68e3a508243a303bfc36884f'
+    baseUrl: process.env.HM_BASE_URL || (ENVIRONMENT === 'production' ? PRODUCTION_CONFIG.baseUrl : SANDBOX_CONFIG.baseUrl),
+    clientId: process.env.HM_CLIENT_ID || (ENVIRONMENT === 'production' ? PRODUCTION_CONFIG.clientId : SANDBOX_CONFIG.clientId),
+    clientSecret: process.env.HM_CLIENT_SECRET || (ENVIRONMENT === 'production' ? PRODUCTION_CONFIG.clientSecret : SANDBOX_CONFIG.clientSecret),
+    userId: process.env.HM_USER_ID || (ENVIRONMENT === 'production' ? PRODUCTION_CONFIG.userId : SANDBOX_CONFIG.userId),
+    environment: ENVIRONMENT
 };
 
 // Enhanced authentication with auto-refresh

@@ -1,5 +1,6 @@
 // Create invoice in HouseMonk for property overuse
 async function createInvoiceForOveruse(auth, resolver, propertyData, pdfFilesOrKeys, jsonFilesOrKeys) {
+    console.log(`🏠 Using HouseMonk ${auth.config.environment} environment: ${auth.config.baseUrl}`);
     console.log(`  📝 Creating invoice for ${propertyData.property}...`);
     
     try {

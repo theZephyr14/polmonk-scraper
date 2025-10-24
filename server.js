@@ -649,14 +649,14 @@ async function cleanupBrowserSession(browser, context) {
 const PROPERTY_COHORTS = {
     // Windows ending in even months (Jan–Feb, Mar–Apr, May–Jun, Jul–Aug, Sep–Oct, Nov–Dec)
     // apply to these properties:
-    EVEN: ['Llull', 'Blasco', 'Torrent', 'Bisbe', 'Aribau', 'Comte', 'Borrell', 'Providencia'],
+    EVEN: ['Llull', 'Blasco', 'Torrent', 'Bisbe', 'Aribau', 'Comte', 'Borrell'],
     // Windows ending in odd months (Feb–Mar, Apr–May, Jun–Jul, Aug–Sep, Oct–Nov, Dec–Jan)
     // apply to these properties:
-    ODD: ['Padilla', 'Sardenya', 'Valencia', 'Sant Joan', 'St Joan']
+    ODD: ['Padilla', 'Sardenya', 'Valencia', 'Sant Joan', 'St Joan', 'Providencia']
 };
 
 // Properties that don't have water invoices (only electricity)
-const NO_WATER_PROPERTIES = ['Aribau 2-1', 'Bisbe 2-2', 'Comte', 'Torrent', 'Valencia', 'Valencia Ático'];
+const NO_WATER_PROPERTIES = ['Aribau 2-1', 'Bisbe 2-2', 'Comte', 'Torrent', 'Valencia Ático', 'Providencia 2º 1ª'];
 
 // Properties that only have water invoices (no electricity)
 const WATER_ONLY_PROPERTIES = ['Aribau 3-2', 'Aribau 1-2', 'Aribau 4-2'];
@@ -823,13 +823,25 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
         
         console.log(`🔍 DEBUG: Bill - Service: "${service}", Initial: "${id}", Final: "${fd}"`);
         
-        // Special case for Valencia water bills - use initial date instead of final date
+        // Special cases for water bills - use initial date instead of final date
         let billingMonth;
-        if (service.includes('water') && propertyName.toLowerCase().includes('valencia') && !propertyName.toLowerCase().includes('ático')) {
-            billingMonth = calculateBillingMonth(id); // Use initial date for Valencia water bills
-            console.log(`🔍 DEBUG: Valencia water bill - using initial date "${id}" for billing month calculation`);
+        if (service.includes('water')) {
+            // Valencia water bills (excluding Ático)
+            if (propertyName.toLowerCase().includes('valencia') && !propertyName.toLowerCase().includes('ático')) {
+                billingMonth = calculateBillingMonth(id); // Use initial date for Valencia water bills
+                console.log(`🔍 DEBUG: Valencia water bill - using initial date "${id}" for billing month calculation`);
+            }
+            // Providencia water bills
+            else if (propertyName.toLowerCase().includes('providencia')) {
+                billingMonth = calculateBillingMonth(id); // Use initial date for Providencia water bills
+                console.log(`🔍 DEBUG: Providencia water bill - using initial date "${id}" for billing month calculation`);
+            }
+            // All other water bills
+            else {
+                billingMonth = calculateBillingMonth(fd); // Use final date for other water bills
+            }
         } else {
-            billingMonth = calculateBillingMonth(fd); // Use final date for all other bills
+            billingMonth = calculateBillingMonth(fd); // Use final date for electricity and other bills
         }
         
         if (!billingMonth) {
