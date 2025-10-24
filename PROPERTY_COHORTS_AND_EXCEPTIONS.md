@@ -47,15 +47,14 @@ These properties **ONLY** have water bills - no electricity bills are processed:
 ## 🔍 Special Billing Logic
 
 ### Special Water Bill Date Logic
-For certain properties, water bills use the **initial date** for billing month calculation instead of the final date:
 
 **Valencia Properties (excluding Ático):**
-- **Valencia Pral 1ª** - Uses initial date for water billing month
-- **Valencia 2º 1ª** - Uses initial date for water billing month
+- **Valencia Pral 1ª** - Uses **initial date** for water billing month calculation
+- **Valencia 2º 1ª** - Uses **initial date** for water billing month calculation
 - **Valencia Ático** - No water bills (electricity only - in NO_WATER_PROPERTIES)
 
 **Providencia Properties:**
-- **Providencia** - Uses initial date for water billing month
+- **Providencia** - Uses **final date** for water billing month calculation (standard)
 - **Providencia 2º 1ª** - No water bills (electricity only - in NO_WATER_PROPERTIES)
 
 ## 📅 Billing Month Calculation
@@ -82,7 +81,6 @@ For certain properties, water bills use the **initial date** for billing month c
 
 **Special Cases:**
 - **Valencia water bills:** Use initial date for billing month calculation
-- **Providencia water bills:** Use initial date for billing month calculation
 - **Valencia Ático:** No water bills (electricity only)
 - **Providencia 2º 1ª:** No water bills (electricity only)
 
