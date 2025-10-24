@@ -13,6 +13,7 @@
 - **Aribau** (La Pedrera Community - Aribau)
 - **Comte** (Comte Borrell)
 - **Borrell** (Comte Borrell)
+- **Providencia** (Providencia) ⚠️ Uses initial date for water bills
 
 ### ODD Cohort (Windows ending in odd months)
 **Periods:** Feb-Mar, Apr-May, Jun-Jul, Aug-Sep, Oct-Nov, Dec-Jan
@@ -20,10 +21,9 @@
 **Properties:**
 - **Padilla** (Padilla)
 - **Sardenya** (Sardenya)
-- **Valencia** (Valencia)
+- **Valencia** (Valencia) ⚠️ Uses initial date for water bills
 - **Sant Joan** (Psg Sant Joan, Pg Sant Joan)
 - **St Joan** (Psg Sant Joan, Pg Sant Joan)
-- **Providencia** (Providencia)
 
 ## ⚠️ Property Exceptions
 

@@ -649,10 +649,10 @@ async function cleanupBrowserSession(browser, context) {
 const PROPERTY_COHORTS = {
     // Windows ending in even months (Jan–Feb, Mar–Apr, May–Jun, Jul–Aug, Sep–Oct, Nov–Dec)
     // apply to these properties:
-    EVEN: ['Llull', 'Blasco', 'Torrent', 'Bisbe', 'Aribau', 'Comte', 'Borrell'],
+    EVEN: ['Llull', 'Blasco', 'Torrent', 'Bisbe', 'Aribau', 'Comte', 'Borrell', 'Providencia'],
     // Windows ending in odd months (Feb–Mar, Apr–May, Jun–Jul, Aug–Sep, Oct–Nov, Dec–Jan)
     // apply to these properties:
-    ODD: ['Padilla', 'Sardenya', 'Valencia', 'Sant Joan', 'St Joan', 'Providencia']
+    ODD: ['Padilla', 'Sardenya', 'Valencia', 'Sant Joan', 'St Joan']
 };
 
 // Properties that don't have water invoices (only electricity)
