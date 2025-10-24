@@ -2,6 +2,30 @@ let excelData = null;
 // Global selection across steps
 window._selectedProperties = null;
 
+// Global cleanup function to prevent event listener buildup
+function cleanupEventListeners() {
+    // Clear any existing processing state
+    window._processingInProgress = false;
+    
+    // Clear any existing SSE connections
+    if (window._sse) {
+        try { window._sse.close(); } catch(_) {}
+        window._sse = null;
+    }
+    
+    // Clear any existing process handlers
+    if (window._currentProcessHandler) {
+        const processBtn = document.getElementById('processBtn');
+        if (processBtn) {
+            processBtn.removeEventListener('click', window._currentProcessHandler);
+        }
+        window._currentProcessHandler = null;
+    }
+}
+
+// Run cleanup on page load
+cleanupEventListeners();
+
 document.addEventListener('DOMContentLoaded', function() {
     const uploadForm = document.getElementById('uploadForm');
     const secretsForm = document.getElementById('secretsForm');
@@ -36,6 +60,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function handleExcelUpload(e) {
         if (e) { e.preventDefault(); }
+        
+        // Clean up any existing state before processing new Excel
+        cleanupEventListeners();
+        
         const excelFile = document.getElementById('excelFile').files[0];
         if (!excelFile) { showMessage('Please select an Excel file', 'error'); return false; }
         const allowedTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.ms-excel'];
@@ -85,6 +113,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Back to upload button
     backToUploadBtn.addEventListener('click', function() {
+        // Clean up any existing state when going back to upload
+        cleanupEventListeners();
+        
         mainInterface.style.display = 'none';
         uploadSection.style.display = 'block';
         uploadForm.reset();
@@ -288,7 +319,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Override process handler to use selection (single full run)
         processBtn.removeEventListener('click', defaultProcessClick);
-        processBtn.addEventListener('click', async function() {
+        processBtn.removeEventListener('click', window._currentProcessHandler);
+        
+        window._currentProcessHandler = async function() {
             const period = document.getElementById('monthPair')?.value || 'Jul-Aug';
             const limit10 = document.getElementById('limit10')?.checked || false;
             const selectedProps = properties.filter(p => selected.has(p.name));
@@ -300,7 +333,9 @@ document.addEventListener('DOMContentLoaded', function() {
             showProcessingModal('Processing Properties');
             try { if (window._sse) { window._sse.close(); } } catch(_) {}
             await processProperties(propsToProcess, period);
-        });
+        };
+        
+        processBtn.addEventListener('click', window._currentProcessHandler);
     }
     
     function showProcessingModal(title = 'Processing Properties') {
@@ -329,6 +364,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function processProperties(properties, period) {
+        // Prevent multiple simultaneous requests
+        if (window._processingInProgress) {
+            addLogEntry('Processing already in progress, please wait...', 'warning');
+            return;
+        }
+        
+        window._processingInProgress = true;
+        
         try {
             // No automatic cancellation - let the backend nuclear option handle it
             addLogEntry('Starting Polaroo processing...', 'info');
@@ -419,6 +462,9 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Processing error:', error);
             addLogEntry(`Error: ${error.message}`, 'error');
             updateProgress(0);
+        } finally {
+            // Always clear the processing flag
+            window._processingInProgress = false;
         }
     }
 
