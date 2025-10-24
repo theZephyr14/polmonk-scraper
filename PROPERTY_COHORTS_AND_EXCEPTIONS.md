@@ -21,7 +21,7 @@
 **Properties:**
 - **Padilla** (Padilla)
 - **Sardenya** (Sardenya)
-- **Valencia** (Valencia) ⚠️ Uses initial date for water bills
+- **Valencia** (Valencia)
 - **Sant Joan** (Psg Sant Joan, Pg Sant Joan)
 - **St Joan** (Psg Sant Joan, Pg Sant Joan)
 
@@ -48,14 +48,15 @@ These properties **ONLY** have water bills - no electricity bills are processed:
 
 ### Special Water Bill Date Logic
 
-**Valencia Properties (excluding Ático):**
-- **Valencia Pral 1ª** - Uses **initial date** for water billing month calculation
-- **Valencia 2º 1ª** - Uses **initial date** for water billing month calculation
-- **Valencia Ático** - No water bills (electricity only - in NO_WATER_PROPERTIES)
-
 **Providencia Properties (excluding 2º 1ª):**
 - **All Providencia units** (except 2º 1ª) - Use **initial date** for water billing month calculation
+- Water bills run from start of month to start of month 2 months later (e.g., 08/07 → 04/09)
 - **Providencia 2º 1ª** - No water bills (electricity only - in NO_WATER_PROPERTIES)
+
+**Valencia Properties:**
+- **Valencia Pral 1ª, Valencia 2º 1ª** - Use **final date** for water billing month calculation (standard)
+- Water bills run approximately 2 months with spillover into next month
+- **Valencia Ático** - No water bills (electricity only - in NO_WATER_PROPERTIES)
 
 ## 📅 Billing Month Calculation
 
@@ -80,8 +81,8 @@ These properties **ONLY** have water bills - no electricity bills are processed:
 - **WATER_ONLY_PROPERTIES:** 3 specific units
 
 **Special Cases:**
-- **Valencia water bills (excluding Ático):** Use initial date for billing month calculation
 - **Providencia water bills (excluding 2º 1ª):** Use initial date for billing month calculation
+- **Valencia water bills:** Use final date for billing month calculation (standard)
 - **Valencia Ático:** No water bills (electricity only)
 - **Providencia 2º 1ª:** No water bills (electricity only)
 
