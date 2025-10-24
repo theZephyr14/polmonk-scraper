@@ -909,7 +909,8 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
         if (waterRequired) {
             warnings.push('Water bill missing - likely other cohort this window');
         } else {
-            warnings.push('Water not required for this cohort-window');
+            // Property is in NO_WATER exception list - this is expected
+            console.log(`ℹ️ DEBUG: ${propertyName} - no water bills (expected, property has no water)`);
         }
         console.log(`⚠️ DEBUG: No water bills found for month ${secondMonth}, using target months: ${targetMonths}`);
     }
