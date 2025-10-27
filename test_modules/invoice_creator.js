@@ -131,7 +131,7 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfFilesOrK
         const payload = {
             users: unitDetails.tenantId ? [unitDetails.tenantId] : undefined,
             type: 'Invoice',
-            transactionBelongsTo: unitDetails.homeId ? 'Home' : 'Listing',
+            transactionBelongsTo: 'Home',
             home: unitDetails.homeId || undefined,
             project: unitDetails.projectId,
             listing: unitDetails.listingId,

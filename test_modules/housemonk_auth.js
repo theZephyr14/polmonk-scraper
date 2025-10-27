@@ -216,18 +216,65 @@ class HouseMonkIDResolver {
                 console.log('⚠️ Not a home...');
             }
             
-            // If we found a listing, use it (even if no tenant/contract)
+            // If we found a listing, search for the home (contract) linked to it
             if (listingData) {
                 // Extract project ID if it's an object
                 const projectId = typeof listingData.project === 'object' ? listingData.project._id : listingData.project;
+                
+                // Search for homes linked to this listing
+                let homeId = null;
+                let tenantId = null;
+                let homeName = null;
+                
+                try {
+                    // Try multiple query approaches
+                    const homeQueries = [
+                        `/api/home?listing=${unitCode}&limit=50`,
+                        `/api/home?listings=${unitCode}&limit=50`,
+                        `/api/home?project=${projectId}&limit=500`
+                    ];
+                    
+                    for (const query of homeQueries) {
+                        try {
+                            const homesResponse = await this.auth.makeAuthenticatedRequest('GET', query, null, true);
+                            const rows = homesResponse.data.rows || [];
+                            
+                            // Filter for homes linked to this specific listing
+                            const matchingHomes = rows.filter(h => 
+                                h.listing === unitCode || 
+                                h.listing?._id === unitCode ||
+                                (typeof h.listing === 'object' && h.listing._id === unitCode)
+                            );
+                            
+                            if (matchingHomes.length > 0) {
+                                // Prefer active with tenant, else with tenant, else any
+                                const withTenantActive = matchingHomes.find(h => (h.status === "active") && (h.tenant?._id || h.tenant));
+                                const withTenant = matchingHomes.find(h => (h.tenant?._id || h.tenant));
+                                const chosen = withTenantActive || withTenant || matchingHomes[0];
+                                
+                                homeId = chosen._id;
+                                tenantId = chosen.tenant?._id || chosen.tenant;
+                                homeName = chosen.name || chosen.address;
+                                console.log(`✅ Found home for listing: ${homeId}, tenant: ${tenantId || 'none'}`);
+                                break;
+                            }
+                        } catch (err) {
+                            // Try next query
+                            continue;
+                        }
+                    }
+                } catch (homeError) {
+                    console.log('⚠️ Could not search for homes');
+                }
+                
                 const result = {
                     unitCode: unitCode,
-                    homeId: null, // No home if unoccupied
+                    homeId: homeId,
                     projectId: projectId,
                     listingId: listingData._id,
-                    tenantId: null, // No tenant if unoccupied
+                    tenantId: tenantId,
                     propertyName: listingData.doorNo || listingData.name || listingData.address,
-                    tenantName: 'No tenant assigned'
+                    tenantName: tenantId ? 'Found tenant' : 'No tenant found'
                 };
                 console.log('✅ Resolved from listing:', result);
                 this.cache.set(unitCode, result);
