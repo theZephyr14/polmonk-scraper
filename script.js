@@ -711,15 +711,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!response.ok || !data.success) {
                     addLogEntry(`❌ End-to-end failed: ${data.message || response.statusText}`, 'error');
                 } else {
-                    addLogEntry(`✅ End-to-end completed: ${data.successCount} successful, ${data.failedCount} failed`, 'success');
-                    if (Array.isArray(data.items)) {
-                        addLogEntry('🔗 Created Invoices:', 'info');
-                        data.items.forEach((item, i) => {
-                            if (item.status === 'success') {
-                                addLogEntry(`  ${i+1}. ${item.property}: ${item.invoiceUrl}`, 'success');
-                            } else {
-                                addLogEntry(`  ${i+1}. ${item.property}: FAILED - ${item.error}`, 'error');
-                            }
+                    // Show summary
+                    addLogEntry(`✅ End-to-end completed: ${data.summary.successful} successful, ${data.summary.failed} failed out of ${data.summary.total} total`, 'success');
+                    
+                    // Show successful invoices
+                    if (data.successfulInvoices && data.successfulInvoices.length > 0) {
+                        addLogEntry('\n🔗 Created Invoices:', 'info');
+                        data.successfulInvoices.forEach((item, i) => {
+                            addLogEntry(`  ${i+1}. ${item.property}: ${item.invoiceUrl} (€${item.overuseAmount})`, 'success');
+                        });
+                    }
+                    
+                    // Show failed properties
+                    if (data.failedProperties && data.failedProperties.length > 0) {
+                        addLogEntry(`\n⚠️ ${data.failedProperties.length} properties failed:`, 'warning');
+                        data.failedProperties.forEach((item, i) => {
+                            addLogEntry(
+                                `  ${i+1}. ${item.property} - ${item.reason} (Unit ID: ${item.unitCode}) - €${item.overuseAmount}`,
+                                'error'
+                            );
                         });
                     }
                 }

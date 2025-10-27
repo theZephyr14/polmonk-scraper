@@ -2782,18 +2782,33 @@ app.post('/api/run-overuse-end-to-end', async (req, res) => {
                     }
                     if (pdfDocuments.length === 0) throw new Error('Upload returned no documents');
 
-                    // 3) Create invoice in HouseMonk attaching only PDFs (skip JSON files in files array)
-                    const invoice = await createInvoiceForOveruse(hmAuth, resolver, prop, pdfDocuments, []);
-                    items.push({
-                        property: prop.property,
-                        status: 'success',
-                        invoiceId: invoice._id,
-                        invoiceUrl: `${hmAuth.config.baseUrl}/dashboard/transactions/${invoice._id}`,
-                        pdfCount: pdfDocuments.length,
-                        overuseAmount: prop.overuse_amount
-                    });
+                    // 3) Create invoice in HouseMonk - catch failures and continue
+                    try {
+                        const invoice = await createInvoiceForOveruse(hmAuth, resolver, prop, pdfDocuments, []);
+                        items.push({
+                            property: prop.property,
+                            status: 'success',
+                            invoiceId: invoice._id,
+                            invoiceUrl: `${hmAuth.config.baseUrl}/dashboard/transactions/${invoice._id}`,
+                            pdfCount: pdfDocuments.length,
+                            overuseAmount: prop.overuse_amount,
+                            unitCode: prop.unitCode || 'N/A'
+                        });
                         sendEvent({ type: 'log', level: 'success', message: `✅ Created invoice ${invoice._id} for ${prop.property}` });
                         success = true;
+                    } catch (invoiceError) {
+                        // Invoice creation failed (likely missing unit ID) - skip and report
+                        items.push({
+                            property: prop.property,
+                            status: 'failed',
+                            reason: invoiceError.message,
+                            overuseAmount: prop.overuse_amount,
+                            unitCode: prop.unitCode || 'Missing in Excel',
+                            pdfCount: pdfDocuments.length
+                        });
+                        sendEvent({ type: 'log', level: 'error', message: `❌ Failed to create invoice for ${prop.property}: ${invoiceError.message}` });
+                        success = true; // Mark as "handled" to continue to next property
+                    }
 
                     } catch (e) {
                         const isClosedErr = /Target page, context or browser has been closed|browserContext\.newPage/i.test(e.message || '');
@@ -2845,9 +2860,32 @@ app.post('/api/run-overuse-end-to-end', async (req, res) => {
             await cleanupBrowserSession(browser, context);
         }
 
-        const successCount = items.filter(x => x.status === 'success').length;
-        const failedCount = items.length - successCount;
-        return res.json({ success: true, message: 'End-to-end completed', successCount, failedCount, items });
+        // Separate successful and failed items
+        const successItems = items.filter(i => i.status === 'success');
+        const failedItems = items.filter(i => i.status === 'failed');
+
+        // Send summary event
+        sendEvent({ 
+            type: 'end_to_end_complete',
+            summary: {
+                total: items.length,
+                successful: successItems.length,
+                failed: failedItems.length
+            }
+        });
+
+        // Return structured response
+        return res.json({ 
+            success: true,
+            message: 'End-to-end completed',
+            summary: {
+                total: items.length,
+                successful: successItems.length,
+                failed: failedItems.length
+            },
+            successfulInvoices: successItems,
+            failedProperties: failedItems
+        });
 
     } catch (error) {
         console.error('❌ End-to-end failed:', error);
