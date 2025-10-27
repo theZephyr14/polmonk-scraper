@@ -596,15 +596,38 @@ document.addEventListener('DOMContentLoaded', function() {
         
         resultsList.innerHTML = '';
         
+        // Initialize selection tracking
+        if (!window._selectedProperties) {
+            window._selectedProperties = new Set();
+            // By default, select all successful properties with overuse
+            results.filter(r => r.success && r.overuse_amount > 0).forEach(r => {
+                window._selectedProperties.add(r.property);
+            });
+        }
+        
         results.forEach(result => {
             const resultItem = document.createElement('div');
             resultItem.className = 'result-item';
             
+            // Only show checkbox for successful properties with overuse
+            const showCheckbox = result.success && result.overuse_amount > 0;
+            const isChecked = showCheckbox && window._selectedProperties.has(result.property);
+            
             resultItem.innerHTML = `
                 <div class="result-header">
-                    <span class="property-name">${result.property}</span>
+                    ${showCheckbox ? `
+                        <label class="property-checkbox-label">
+                            <input type="checkbox" 
+                                   class="property-checkbox" 
+                                   data-property="${result.property}" 
+                                   ${isChecked ? 'checked' : ''}>
+                            <span class="property-name">${result.property}</span>
+                        </label>
+                    ` : `
+                        <span class="property-name">${result.property}</span>
+                    `}
                     <span class="status-badge ${result.success ? 'success' : 'error'}">
-                        ${result.success ? 'Success' : 'Failed'}
+                        ${result.success ? 'SUCCESS' : 'Failed'}
                     </span>
                 </div>
                 ${result.success ? `
@@ -659,6 +682,57 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             resultsList.appendChild(resultItem);
+        });
+        
+        // Attach checkbox event listeners
+        document.querySelectorAll('.property-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const propertyName = e.target.dataset.property;
+                if (e.target.checked) {
+                    window._selectedProperties.add(propertyName);
+                } else {
+                    window._selectedProperties.delete(propertyName);
+                }
+                // Update count display
+                const countEl = document.getElementById('selectionCount');
+                if (countEl) {
+                    countEl.textContent = `${window._selectedProperties.size} selected`;
+                }
+                console.log(`Selected properties (${window._selectedProperties.size}):`, Array.from(window._selectedProperties));
+            });
+        });
+        
+        // Add "Select All" / "Deselect All" buttons
+        const selectionControlsDiv = document.createElement('div');
+        selectionControlsDiv.style.cssText = 'display: flex; gap: 10px; margin-top: 15px; margin-bottom: 10px;';
+        selectionControlsDiv.innerHTML = `
+            <button id="selectAllBtn" class="submit-btn" style="flex: 1; padding: 8px; font-size: 14px; background: #28a745;">
+                ✓ Select All
+            </button>
+            <button id="deselectAllBtn" class="submit-btn" style="flex: 1; padding: 8px; font-size: 14px; background: #6c757d;">
+                ✗ Deselect All
+            </button>
+            <div style="flex: 2; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #333;">
+                <span id="selectionCount">${window._selectedProperties.size} selected</span>
+            </div>
+        `;
+        resultsList.insertBefore(selectionControlsDiv, resultsList.firstChild);
+        
+        // Event listeners for select/deselect all
+        document.getElementById('selectAllBtn').addEventListener('click', () => {
+            document.querySelectorAll('.property-checkbox').forEach(cb => {
+                cb.checked = true;
+                window._selectedProperties.add(cb.dataset.property);
+            });
+            document.getElementById('selectionCount').textContent = `${window._selectedProperties.size} selected`;
+        });
+        
+        document.getElementById('deselectAllBtn').addEventListener('click', () => {
+            document.querySelectorAll('.property-checkbox').forEach(cb => {
+                cb.checked = false;
+                window._selectedProperties.delete(cb.dataset.property);
+            });
+            document.getElementById('selectionCount').textContent = `${window._selectedProperties.size} selected`;
         });
         
         // Add export button for HouseMonk testing (TEMPORARY)
