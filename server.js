@@ -1108,8 +1108,10 @@ Respond in JSON format:
 
 // Helper function to get monthly allowance based on property and room count
 function getMonthlyAllowance(propertyName, roomCount) {
-    // Special case for Padilla 1-3
-    if (propertyName.toLowerCase().includes('padilla 1-3')) {
+    // Special case for Padilla 1-3 (handles various formats: "Padilla 1-3", "Padilla 1º 3ª", "Padilla 1 3", etc.)
+    const padillaPattern = /padilla\s*1[º\s\-]*3[ª]*/i;
+    if (padillaPattern.test(propertyName)) {
+        console.log(`🎯 Special allowance: ${propertyName} → 150€/month (Padilla 1-3)`);
         return 150;
     }
     
