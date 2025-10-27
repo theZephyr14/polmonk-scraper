@@ -239,12 +239,16 @@ class HouseMonkIDResolver {
                             const homesResponse = await this.auth.makeAuthenticatedRequest('GET', query, null, true);
                             const rows = homesResponse.data.rows || [];
                             
-                            // Filter for homes linked to this specific listing
-                            const matchingHomes = rows.filter(h => 
-                                h.listing === unitCode || 
-                                h.listing?._id === unitCode ||
-                                (typeof h.listing === 'object' && h.listing._id === unitCode)
-                            );
+                            // Only filter if NOT using ?listings= query (which already filters)
+                            let matchingHomes = rows;
+                            if (!query.includes('?listings=')) {
+                                // Filter for homes linked to this specific listing
+                                matchingHomes = rows.filter(h => 
+                                    h.listing === unitCode || 
+                                    h.listing?._id === unitCode ||
+                                    (typeof h.listing === 'object' && h.listing._id === unitCode)
+                                );
+                            }
                             
                             if (matchingHomes.length > 0) {
                                 // Prefer active with tenant, else with tenant, else any
