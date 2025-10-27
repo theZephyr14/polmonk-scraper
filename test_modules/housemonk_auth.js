@@ -12,9 +12,9 @@ const SANDBOX_CONFIG = {
 
 const PRODUCTION_CONFIG = {
     baseUrl: 'https://dashboard.thehousemonk.com',
-    clientId: 'bbfed7c0-7b22-11ef-b786-63cefb315b9b',
-    clientSecret: '5e88c469-771c-48ab-829f-2c09aa30e6cc',
-    userId: '66e2733728d6d5100f9d9b05'
+    clientId: '1326bbe0-8ed1-11f0-b658-7dd414f87b53',
+    clientSecret: 'eaafb314-ff3b-4481-8f29-e235212e7a1d',
+    userId: '6891dfbf052d1d7f336d0d62'
 };
 
 // Configuration - use environment variables or fallback to environment-specific config
