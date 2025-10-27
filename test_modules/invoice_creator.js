@@ -136,7 +136,7 @@ async function createInvoiceForOveruse(auth, resolver, propertyData, pdfFilesOrK
             project: unitDetails.projectId,
             listing: unitDetails.listingId,
             source: 'api_external',
-            status: 'due', // ensure document number is generated
+            status: process.env.INVOICE_STATUS || 'draft', // START WITH DRAFT FOR PRODUCTION TESTING
             dueDate,
             invoiceDate: today,
             taxable: true,

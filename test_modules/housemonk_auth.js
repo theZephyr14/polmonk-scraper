@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 // Environment configuration - switch between sandbox and production
-const ENVIRONMENT = process.env.HM_ENVIRONMENT || 'sandbox';
+const ENVIRONMENT = process.env.HM_ENVIRONMENT || 'production'; // CHANGED TO PRODUCTION
 
 const SANDBOX_CONFIG = {
     baseUrl: 'https://qa1.thehousemonk.com',
