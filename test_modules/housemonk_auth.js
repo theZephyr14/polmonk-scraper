@@ -128,7 +128,7 @@ class HouseMonkAuth {
 
             const requestUrl = `${this.config.baseUrl}${endpoint}`;
             const requestHeaders = {
-                'Authorization': useUserToken ? this.userToken : this.masterToken,
+                'authorization': useUserToken ? this.userToken : this.masterToken,
                 'x-api-key': this.config.clientId,
                 'Content-Type': 'application/json'
             };
