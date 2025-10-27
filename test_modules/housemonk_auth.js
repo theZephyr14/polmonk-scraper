@@ -196,23 +196,64 @@ class HouseMonkIDResolver {
         console.log(`🔍 Resolving IDs from unit code: ${unitCode}`);
         
         try {
-            // Get home details
-            const homeResponse = await this.auth.makeAuthenticatedRequest('GET', `/api/home/${unitCode}`, null, true);
-            const home = homeResponse.data;
+            // Try getting listing details first (since unitCode might be a listing ID)
+            let listingData = null;
+            try {
+                const listingResponse = await this.auth.makeAuthenticatedRequest('GET', `/api/listing/${unitCode}`, null, true);
+                listingData = listingResponse.data;
+                console.log('✅ Found as listing:', listingData.name || listingData.address);
+            } catch (listingError) {
+                console.log('⚠️ Not a listing, trying as home...');
+            }
             
-            const result = {
-                unitCode: unitCode,
-                homeId: home._id,
-                projectId: home.project,
-                listingId: home.listing,
-                tenantId: home.tenant?._id || home.tenant,
-                propertyName: home.name || home.address,
-                tenantName: home.tenant?.firstName ? `${home.tenant.firstName} ${home.tenant.lastName}` : 'Unknown'
-            };
-
-            console.log('✅ Resolved IDs:', result);
-            this.cache.set(unitCode, result);
-            return result;
+            // Try getting home details
+            let homeData = null;
+            try {
+                const homeResponse = await this.auth.makeAuthenticatedRequest('GET', `/api/home/${unitCode}`, null, true);
+                homeData = homeResponse.data;
+                console.log('✅ Found as home:', homeData.name || homeData.address);
+            } catch (homeError) {
+                console.log('⚠️ Not a home...');
+            }
+            
+            // If we found a listing, use it (even if no tenant/contract)
+            if (listingData) {
+                // Extract project ID if it's an object
+                const projectId = typeof listingData.project === 'object' ? listingData.project._id : listingData.project;
+                const result = {
+                    unitCode: unitCode,
+                    homeId: null, // No home if unoccupied
+                    projectId: projectId,
+                    listingId: listingData._id,
+                    tenantId: null, // No tenant if unoccupied
+                    propertyName: listingData.doorNo || listingData.name || listingData.address,
+                    tenantName: 'No tenant assigned'
+                };
+                console.log('✅ Resolved from listing:', result);
+                this.cache.set(unitCode, result);
+                return result;
+            }
+            
+            // If we found a home, use it
+            if (homeData) {
+                // Extract project ID if it's an object
+                const projectId = typeof homeData.project === 'object' ? homeData.project._id : homeData.project;
+                const result = {
+                    unitCode: unitCode,
+                    homeId: homeData._id,
+                    projectId: projectId,
+                    listingId: homeData.listing,
+                    tenantId: homeData.tenant?._id || homeData.tenant,
+                    propertyName: homeData.doorNo || homeData.name || homeData.address,
+                    tenantName: homeData.tenant?.firstName ? `${homeData.tenant.firstName} ${homeData.tenant.lastName}` : 'Unknown'
+                };
+                console.log('✅ Resolved from home:', result);
+                this.cache.set(unitCode, result);
+                return result;
+            }
+            
+            // Neither worked
+            throw new Error('Unit not found as either listing or home');
         } catch (error) {
             console.error('❌ Failed to resolve IDs from unit:', error.response?.data?.message || error.message);
             throw error;
