@@ -55,9 +55,18 @@ These properties **ONLY** have water bills - no electricity bills are processed:
 - Valencia: `31/07/2025 → 01/10/2025` - Final date 01/10 (day 1 ≤ 9) → billingMonth = **September** (for Aug-Sep period)
 - Standard: `02/06/2025 → 31/07/2025` - Final date 31/07 (day 31 > 9) → billingMonth = **July** (for Jun-Jul period)
 
-**Exceptions (No water bills):**
-- **Providencia 2º 1ª** - No water bills (electricity only - in NO_WATER_PROPERTIES)
-- **Valencia Ático** - No water bills (electricity only - in NO_WATER_PROPERTIES)
+**Properties with NO WATER BILLS (Electricity only):**
+- **Aribau 2º 1º** (Aribau 2-1) - Electricity only
+- **Bisbe Laguarda 14, 2-2** (Bisbe 2-2) - Electricity only
+- **Comte** - Electricity only
+- **Torrent** - Electricity only
+- **Valencia Ático** - Electricity only
+- **Providencia 2º 1ª** - Electricity only
+
+**Properties with WATER BILLS ONLY (No electricity):**
+- **Aribau 1º 2ª** (Aribau 1-2) - Water only
+- **Aribau 3º 2ª** (Aribau 3-2) - Water only
+- **Aribau 4º 2ª** (Aribau 4-2) - Water only
 
 ## 📅 Billing Month Calculation
 
