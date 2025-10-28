@@ -799,8 +799,16 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
     const propertyIsEven = isPropertyInCohort(propertyName, 'EVEN');
     const propertyIsOdd = isPropertyInCohort(propertyName, 'ODD');
     // Check for special property exceptions
-    const isNoWaterProperty = NO_WATER_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
-    const isWaterOnlyPropertyFilter = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+    // Normalize property name by removing º, ª symbols and replacing with spaces for better matching
+    const normalizedPropertyName = propertyName.toLowerCase().replace(/[ºª]/g, ' ').replace(/\s+/g, ' ').trim();
+    const isNoWaterProperty = NO_WATER_PROPERTIES.some(prop => {
+        const normalizedProp = prop.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+        return normalizedPropertyName.includes(normalizedProp) || propertyName.toLowerCase().includes(prop.toLowerCase());
+    });
+    const isWaterOnlyPropertyFilter = WATER_ONLY_PROPERTIES.some(prop => {
+        const normalizedProp = prop.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+        return normalizedPropertyName.includes(normalizedProp) || propertyName.toLowerCase().includes(prop.toLowerCase());
+    });
     
     let waterRequired = (isOddEnd && propertyIsOdd) || (!isOddEnd && propertyIsEven);
     
@@ -951,8 +959,16 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
     }
     
     // Validation warnings - check exception properties first
-    const isWaterOnlyPropertyLLM = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
-    const isNoWaterPropertyValidation = NO_WATER_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+    // Use same normalization as above for consistent matching
+    const normalizedPropertyNameValidation = propertyName.toLowerCase().replace(/[ºª]/g, ' ').replace(/\s+/g, ' ').trim();
+    const isWaterOnlyPropertyLLM = WATER_ONLY_PROPERTIES.some(prop => {
+        const normalizedProp = prop.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+        return normalizedPropertyNameValidation.includes(normalizedProp) || propertyName.toLowerCase().includes(prop.toLowerCase());
+    });
+    const isNoWaterPropertyValidation = NO_WATER_PROPERTIES.some(prop => {
+        const normalizedProp = prop.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+        return normalizedPropertyNameValidation.includes(normalizedProp) || propertyName.toLowerCase().includes(prop.toLowerCase());
+    });
     
     // Only warn about electricity if property is NOT water-only
     if (!isWaterOnlyPropertyLLM) {
@@ -1658,7 +1674,12 @@ app.post('/api/process-properties', async (req, res) => {
                         issues.push('LLM fallback used');
                     }
                     // Check if this is a water-only property
-                    const isWaterOnlyPropertyError = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+                    // Use normalized matching for º/ª symbols
+                    const normalizedPropertyNameError = propertyName.toLowerCase().replace(/[ºª]/g, ' ').replace(/\s+/g, ' ').trim();
+                    const isWaterOnlyPropertyError = WATER_ONLY_PROPERTIES.some(prop => {
+                        const normalizedProp = prop.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+                        return normalizedPropertyNameError.includes(normalizedProp) || propertyName.toLowerCase().includes(prop.toLowerCase());
+                    });
                     
                     if (electricityBills.length === 0 && !isWaterOnlyPropertyError) {
                         issues.push('No electricity bills found');
@@ -1669,8 +1690,14 @@ app.post('/api/process-properties', async (req, res) => {
                     const propertyIsOdd = isPropertyInCohort(propertyName, 'ODD');
                     
                     // Check for special property exceptions
-                    const isNoWaterPropertyError = NO_WATER_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
-                    const isWaterOnlyPropertyError2 = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+                    const isNoWaterPropertyError = NO_WATER_PROPERTIES.some(prop => {
+                        const normalizedProp = prop.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+                        return normalizedPropertyNameError.includes(normalizedProp) || propertyName.toLowerCase().includes(prop.toLowerCase());
+                    });
+                    const isWaterOnlyPropertyError2 = WATER_ONLY_PROPERTIES.some(prop => {
+                        const normalizedProp = prop.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+                        return normalizedPropertyNameError.includes(normalizedProp) || propertyName.toLowerCase().includes(prop.toLowerCase());
+                    });
                     
                     let waterRequiredIssue = (isOddEnd && propertyIsOdd) || (!isOddEnd && propertyIsEven);
                     
