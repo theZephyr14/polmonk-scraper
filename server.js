@@ -950,22 +950,30 @@ function filterBillsByMonth(tableData, targetMonths, propertyName) {
         }
     }
     
-    // Validation warnings
-    if (electricity.length < 2) {
-        warnings.push(`Only ${electricity.length}/2 electricity bills found`);
-    } else if (electricity.length > 2) {
-        warnings.push(`Extra electricity bills found (${electricity.length} instead of 2)`);
+    // Validation warnings - check exception properties first
+    const isWaterOnlyPropertyLLM = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+    const isNoWaterPropertyValidation = NO_WATER_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
+    
+    // Only warn about electricity if property is NOT water-only
+    if (!isWaterOnlyPropertyLLM) {
+        if (electricity.length < 2) {
+            warnings.push(`Only ${electricity.length}/2 electricity bills found`);
+        } else if (electricity.length > 2) {
+            warnings.push(`Extra electricity bills found (${electricity.length} instead of 2)`);
+        }
     }
     
-    if (water.length === 0 && waterRequired) {
-        warnings.push('Water bill missing');
-    } else if (water.length > 1) {
-        warnings.push(`Multiple water bills found (${water.length})`);
+    // Only warn about water if property is NOT no-water
+    if (!isNoWaterPropertyValidation) {
+        if (water.length === 0 && waterRequired) {
+            warnings.push('Water bill missing');
+        } else if (water.length > 1) {
+            warnings.push(`Multiple water bills found (${water.length})`);
+        }
     }
     
     // Only trigger LLM fallback when NO electricity bills found
     // Exception: water-only properties don't need electricity, so don't trigger LLM fallback
-    const isWaterOnlyPropertyLLM = WATER_ONLY_PROPERTIES.some(prop => propertyName.toLowerCase().includes(prop.toLowerCase()));
     const needsLLMFallback = electricity.length === 0 && !isWaterOnlyPropertyLLM;
     
     return { electricity, water, warnings, needsLLMFallback };
