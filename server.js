@@ -659,7 +659,7 @@ const PROPERTY_COHORTS = {
 // Include both short and full names as they appear in Polaroo for robust matching
 const NO_WATER_PROPERTIES = [
     'Aribau 2-1', 'Aribau 2º 1º',
-    'Bisbe 2-2', 'Bisbe Laguarda', 'Bisbe Laguarda 14, 2-2',
+    'Bisbe 2-2', 'Bisbe Laguarda 14, 2-2',
     'Comte', 'Comte Borrell',
     'Torrent', 'Torrent Olla',
     'Valencia Ático',
