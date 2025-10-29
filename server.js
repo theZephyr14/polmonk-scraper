@@ -656,10 +656,22 @@ const PROPERTY_COHORTS = {
 };
 
 // Properties that don't have water invoices (only electricity)
-const NO_WATER_PROPERTIES = ['Aribau 2-1', 'Aribau 2º 1º', 'Bisbe 2-2', 'Bisbe Laguarda 14, 2-2', 'Comte', 'Torrent', 'Valencia Ático', 'Providencia 2º 1ª', 'Providencia 2-1'];
+// Include both short and full names as they appear in Polaroo for robust matching
+const NO_WATER_PROPERTIES = [
+    'Aribau 2-1', 'Aribau 2º 1º',
+    'Bisbe 2-2', 'Bisbe Laguarda', 'Bisbe Laguarda 14, 2-2',
+    'Comte', 'Comte Borrell',
+    'Torrent', 'Torrent Olla',
+    'Valencia Ático',
+    'Providencia 2º 1ª', 'Providencia 2-1'
+];
 
 // Properties that only have water invoices (no electricity)
-const WATER_ONLY_PROPERTIES = ['Aribau 3-2', 'Aribau 3º 2ª', 'Aribau 1-2', 'Aribau 1º 2ª', 'Aribau 4-2', 'Aribau 4º 2ª'];
+const WATER_ONLY_PROPERTIES = [
+    'Aribau 3-2', 'Aribau 3º 2ª',
+    'Aribau 1-2', 'Aribau 1º 2ª',
+    'Aribau 4-2', 'Aribau 4º 2ª'
+];
 
 // Determine cohort from month pair (second month determines cohort)
 function getCohortForPeriod(targetMonths) {
